@@ -237,7 +237,7 @@ def cv_ftrl_02_new20b():
 
 
 def main():
-    data_process_01_webspam_small()
+    # data_process_01_webspam_small()
     cv_ftrl_01_webspam_small()
 
 
