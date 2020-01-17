@@ -19,6 +19,9 @@ include_directories(${OPENBLAS_INCLUDE_DIR})
 find_package(PythonLibs 2.7 REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
+add_executable(read_svm algo_wrapper/read_svm.c)
+target_link_libraries(read_svm -std=c11 -Wall -O3)
+
 add_library(sparse_module SHARED algo_wrapper/main_wrapper.c
         algo_wrapper/online_methods.h algo_wrapper/online_methods.c
         algo_wrapper/fast_pcst.c algo_wrapper/fast_pcst.h algo_wrapper/loss.c algo_wrapper/loss.h)

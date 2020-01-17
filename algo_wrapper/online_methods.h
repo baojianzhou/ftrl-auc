@@ -197,4 +197,13 @@ void _algo_ftrl_proximal(Data *data,
                          double para_beta,
                          double para_gamma);
 
+void _algo_ftrl_proximal_file(Data *data,
+                              GlobalParas *paras,
+                              AlgoResults *re,
+                              double para_l1,
+                              double para_l2,
+                              double para_beta,
+                              double para_gamma,
+                              const char *filename)
+
 #endif //SPARSE_AUC_AUC_OPT_METHODS_H

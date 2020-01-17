@@ -1000,8 +1000,7 @@ void _algo_ftrl_auc(Data *data,
             for (int ii = 0; ii < data->x_tr_lens[ind]; ii++) {
                 xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
             }
-            if (data->y_tr[ind] > 0) {
-                ;
+            if (data->y_tr[ind] > 0) { ;
             }
             t_posi += is_posi(data->y_tr[ind]) ? 1. : 0.0;
             t_nega += is_nega(data->y_tr[ind]) ? 1. : 0.0;
@@ -1062,6 +1061,77 @@ void _algo_ftrl_proximal(Data *data,
     double *zt = calloc(data->p + 1, sizeof(double));
     double *gt_square = calloc(data->p + 1, sizeof(double));
     double *true_labels = malloc(sizeof(double) * (data->n));
+    for (int tt = 0; tt < data->n; tt++) {
+        // 1. example x_i arrives and then we make prediction.
+        int ind = data->perm[tt]; // the index of the current training example.
+        double weight;
+        if (data->is_sparse) {
+            memset(gt, 0, sizeof(double) * (data->p + 1));
+            double xtw = 0.0, ni, pow_gt;
+            // receive a training sample.
+            const int *xt_inds = data->x_tr_inds + data->x_tr_poss[ind];
+            const double *xt_vals = data->x_tr_vals + data->x_tr_poss[ind];
+            // lazy update the model
+            for (int ii = 0; ii < data->x_tr_lens[ind]; ii++) {
+                ni = gt_square[xt_inds[ii]];
+                re->wt[xt_inds[ii]] = fabs(zt[xt_inds[ii]]) <= para_l1 ? 0.0 :
+                                      -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
+                                      / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+            }
+            // make a prediction
+            double z0 = (data->y_tr[ind]) * (xtw + re->wt[data->p]);
+            re->scores[tt] = expit(z0);
+            // calculate the gradient of w
+            weight = -(data->y_tr[ind]) * expit(-z0);
+            for (int ii = 0; ii < data->x_tr_lens[ind]; ii++) {
+                gt[xt_inds[ii]] = weight * xt_vals[ii];
+                ni = gt_square[xt_inds[ii]];
+                pow_gt = pow(gt[xt_inds[ii]], 2.);
+                zt[xt_inds[ii]] += gt[xt_inds[ii]] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+                gt_square[xt_inds[ii]] += pow_gt;
+            }
+            // calculate the gradient of intercept
+            gt[data->p] = weight;
+            ni = gt_square[data->p];
+            pow_gt = pow(gt[data->p], 2.);
+            zt[data->p] += gt[data->p] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+            gt_square[data->p] += pow_gt;
+            if (paras->record_aucs == 1) {
+                double t_eval = clock();
+                true_labels[re->auc_len] = data->y_tr[ind];
+                re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, tt);
+                re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
+            }
+        } else {
+
+        }
+    }
+    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
+    free(true_labels);
+    free(gt);
+    free(zt);
+    free(gt_square);
+}
+
+void _algo_ftrl_proximal_file(Data *data,
+                              GlobalParas *paras,
+                              AlgoResults *re,
+                              double para_l1,
+                              double para_l2,
+                              double para_beta,
+                              double para_gamma,
+                              const char *filename) {
+    clock_t start_time = clock();
+    openblas_set_num_threads(1);
+    double *gt = malloc(sizeof(double) * (data->p + 1));
+    double *zt = calloc(data->p + 1, sizeof(double));
+    double *gt_square = calloc(data->p + 1, sizeof(double));
+    double *true_labels = malloc(sizeof(double) * (data->n));
+
+    FILE *fp = fopen(filename, "r");
+    char *line = (char *) malloc((2000) * sizeof(char));
+
     for (int tt = 0; tt < data->n; tt++) {
         // 1. example x_i arrives and then we make prediction.
         int ind = data->perm[tt]; // the index of the current training example.
