@@ -128,8 +128,56 @@ def data_process_01_webspam_whole():
     return data
 
 
+def data_process_01_webspam_small():
+    data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
+    data = dict()
+    data['x_tr_vals'] = []
+    data['x_tr_inds'] = []
+    data['x_tr_poss'] = []
+    data['x_tr_lens'] = []
+    data['y_tr'] = []
+    prev_posi, feature_index, features = 0, 0, dict()
+    with open(data_path + 'webspam_wc_normalized_trigram_small.svm') as f:
+        for ind, each_line in enumerate(f.readlines()):
+            items = str(each_line).lstrip().rstrip().split(' ')
+            cur_values = [float(_.split(':')[1]) for _ in items[1:]]
+            cur_indices = [int(_.split(':')[0]) for _ in items[1:]]
+            for item in cur_indices:
+                if item not in features:
+                    features[item] = feature_index
+                    feature_index += 1
+            data['y_tr'].append(float(items[0]))
+            data['x_tr_vals'].extend(cur_values)
+            data['x_tr_inds'].extend([features[_] for _ in cur_indices])
+            data['x_tr_poss'].append(prev_posi)
+            data['x_tr_lens'].append(len(cur_indices))
+            prev_posi += len(cur_indices)
+            if len(items) == 1:
+                print(each_line)
+    print(min(features.keys()), max(features.keys()))
+    print(min(features.values()), max(features.values()))
+    data['x_tr_vals'] = np.asarray(data['x_tr_vals'], dtype=float)
+    data['x_tr_inds'] = np.asarray(data['x_tr_inds'], dtype=np.int32)
+    data['x_tr_lens'] = np.asarray(data['x_tr_lens'], dtype=np.int32)
+    data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
+    data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
+    data['n'] = len(data['y_tr'])
+    data['p'] = len(features.keys())
+    assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
+    print('number of positive: %d' % len([_ for _ in data['y_tr'] if _ > 0]))
+    print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
+    data['num_posi'] = len([_ for _ in data['y_tr'] if _ > 0])
+    data['num_nega'] = len([_ for _ in data['y_tr'] if _ < 0])
+    data['num_nonzeros'] = len(data['x_tr_vals'])
+    data['name'] = '01_webspam'
+    for run_id in range(10):
+        rand_perm = np.random.permutation(data['n'])
+        data['rand_perm_%d' % run_id] = rand_perm
+    pkl.dump(data, open(data_path + '01_webspam_10000.pkl', 'wb'))
+    return data
+
+
 def cv_ftrl_01_webspam_small():
-    import matplotlib.pyplot as plt
     data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
     verbose, record_aucs = 0, 0
     data = pkl.load(open(data_path + '01_webspam_10000.pkl'))
@@ -138,39 +186,26 @@ def cv_ftrl_01_webspam_small():
     x_te_indices = all_indices[8000:]
     __ = get_data_by_ind(data, all_indices, x_tr_indices)
     sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr = __
-    para_l1, run_id = 100000. / float(8000.), 0
-    for para_l2, para_beta, para_gamma in product([0.0], [1.], [0.2, 0.25, 0.3, 0.35, 0.4, 0.5, 1.0]):
+    para_space = []
+    for para_l2, para_beta, para_gamma, para_l1 in product(
+            [0.0], [1.], [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1],
+            [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2]):
         global_paras = np.asarray([verbose, record_aucs], dtype=float)
         run_time = time.time()
-        wt, aucs, rts = c_algo_ftrl_proximal(
-            sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
-            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+        para_space.append((sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
+                           1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma))
+    pool = multiprocessing.Pool(processes=27)
+    ms_res = pool.map(c_algo_ftrl_proximal, para_space)
+    pool.close()
+    pool.join()
+    for wt, aucs, rts in ms_res:
         print('run_time: %.4f nonzero-ratio: %.4f predicted-auc: %.4f' %
-              (time.time() - run_time, np.count_nonzero(wt) / float(data['p']),
+              (time.time() - rts[-1], np.count_nonzero(wt) / float(data['p']),
                pred_auc(data, all_indices, x_te_indices, wt)))
+    pkl.dump(ms_res, open(data_path + 're_small.pkl', 'wb'))
 
 
 def cv_ftrl_01_webspam_whole():
-    data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
-    verbose, record_aucs = 0, 0
-    data = pkl.load(open(data_path + '01_webspam_350000.pkl'))
-    para_l1, run_id = 0.05 / float(data['n']), 0
-    for para_l2, para_beta, para_gamma in product([0.0], [1.], [0.0003, 0.003]):
-        global_paras = np.asarray([verbose, record_aucs], dtype=float)
-        run_time = time.time()
-        wt, aucs, rts = c_algo_ftrl_proximal(
-            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'],
-            data['x_tr_lens'], np.asarray(data['y_tr'], dtype=float), data['rand_perm_%d' % run_id],
-            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-        print('run_time: %.4f nonzero-ratio: %.4f' %
-              (time.time() - run_time, np.count_nonzero(wt) / float(data['p'])))
-
-
-def cv_ftrl_02_new20b():
-    pass
-
-
-def main():
     verbose, record_aucs = 0, 0
     data = data_process_01_webspam_whole()
     all_indices = np.arange(data['n'])
@@ -188,6 +223,15 @@ def main():
               (time.time() - run_time, np.count_nonzero(wt) / float(data['p']),
                pred_auc(data, all_indices, x_te_indices, wt)))
         sys.stdout.flush()
+
+
+def cv_ftrl_02_new20b():
+    pass
+
+
+def main():
+    data_process_01_webspam_small()
+    cv_ftrl_01_webspam_small()
 
 
 if __name__ == '__main__':
