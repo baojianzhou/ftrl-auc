@@ -182,7 +182,7 @@ def run_single_small(para):
      is_sparse, p, global_paras, para_l1, para_l2, para_beta, para_gamma) = para
     wt, aucs, rts = c_algo_ftrl_proximal(sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
                                          is_sparse, p, global_paras, para_l1, para_l2, para_beta, para_gamma)
-    return wt, aucs, rts
+    return para_gamma, para_l1, wt, aucs, rts
 
 
 def cv_ftrl_01_webspam_small():
@@ -205,9 +205,10 @@ def cv_ftrl_01_webspam_small():
     ms_res = pool.map(run_single_small, para_space)
     pool.close()
     pool.join()
-    for wt, aucs, rts in ms_res:
-        print('nonzero-ratio: %.4f predicted-auc: %.4f' %
-              (np.count_nonzero(wt) / float(data['p']), pred_auc(data, all_indices, x_te_indices, wt)))
+    for para_gamma, para_l1, wt, aucs, rts in ms_res:
+        print('para_gamma: %.4f para_l1: %.4f nonzero-ratio: %.4f predicted-auc: %.4f' %
+              (para_gamma, para_l1, np.count_nonzero(wt) / float(data['p']),
+               pred_auc(data, all_indices, x_te_indices, wt)))
     pkl.dump(ms_res, open(data_path + 're_small.pkl', 'wb'))
 
 
