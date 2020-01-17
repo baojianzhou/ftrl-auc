@@ -204,6 +204,6 @@ void _algo_ftrl_proximal_file(Data *data,
                               double para_l2,
                               double para_beta,
                               double para_gamma,
-                              const char *filename)
+                              const char *filename);
 
 #endif //SPARSE_AUC_AUC_OPT_METHODS_H
