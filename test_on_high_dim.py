@@ -166,20 +166,27 @@ def cv_ftrl_01_webspam_whole():
               (time.time() - run_time, np.count_nonzero(wt) / float(data['p'])))
 
 
+def cv_ftrl_02_new20b():
+    pass
+
+
 def main():
     verbose, record_aucs = 0, 0
     data = data_process_01_webspam_whole()
-    para_l1, run_id = 0.05 / float(data['n']), 0
+    all_indices = np.arange(data['n'])
+    x_tr_indices = all_indices[:280000]
+    x_te_indices = all_indices[280000:]
     for para_l2, para_beta, para_gamma, para_l1 in product(
             [0.0], [1.], [1.0], np.asarray([0.05, 0.5, 1.0, 5., 10., 50., 100., 1000.]) / 280000.):
         global_paras = np.asarray([verbose, record_aucs], dtype=float)
         run_time = time.time()
         wt, aucs, rts = c_algo_ftrl_proximal(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'],
-            data['x_tr_lens'], np.asarray(data['y_tr'], dtype=float), data['rand_perm_%d' % run_id],
+            data['x_tr_lens'], np.asarray(data['y_tr'], dtype=float), x_tr_indices,
             1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-        print('run_time: %.4f nonzero-ratio: %.4f' %
-              (time.time() - run_time, np.count_nonzero(wt) / float(data['p'])))
+        print('run_time: %.4f nonzero-ratio: %.4f predicted-auc: %.4f' %
+              (time.time() - run_time, np.count_nonzero(wt) / float(data['p']),
+               pred_auc(data, all_indices, x_te_indices, wt)))
         sys.stdout.flush()
 
 
