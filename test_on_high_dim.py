@@ -206,9 +206,8 @@ def cv_ftrl_01_webspam_small():
     pool.close()
     pool.join()
     for wt, aucs, rts in ms_res:
-        print('run_time: %.4f nonzero-ratio: %.4f predicted-auc: %.4f' %
-              (time.time() - rts[-1], np.count_nonzero(wt) / float(data['p']),
-               pred_auc(data, all_indices, x_te_indices, wt)))
+        print('nonzero-ratio: %.4f predicted-auc: %.4f' %
+              (np.count_nonzero(wt) / float(data['p']), pred_auc(data, all_indices, x_te_indices, wt)))
     pkl.dump(ms_res, open(data_path + 're_small.pkl', 'wb'))
 
 
