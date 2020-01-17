@@ -177,6 +177,14 @@ def data_process_01_webspam_small():
     return data
 
 
+def run_single_small(para):
+    (sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
+     is_sparse, p, global_paras, para_l1, para_l2, para_beta, para_gamma) = para
+    wt, aucs, rts = c_algo_ftrl_proximal(sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
+                                         is_sparse, p, global_paras, para_l1, para_l2, para_beta, para_gamma)
+    return wt, aucs, rts
+
+
 def cv_ftrl_01_webspam_small():
     data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
     verbose, record_aucs = 0, 0
@@ -191,11 +199,10 @@ def cv_ftrl_01_webspam_small():
             [0.0], [1.], [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1],
             [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2]):
         global_paras = np.asarray([verbose, record_aucs], dtype=float)
-        run_time = time.time()
         para_space.append((sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
                            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma))
     pool = multiprocessing.Pool(processes=27)
-    ms_res = pool.map(c_algo_ftrl_proximal, para_space)
+    ms_res = pool.map(run_single_small, para_space)
     pool.close()
     pool.join()
     for wt, aucs, rts in ms_res:
