@@ -151,6 +151,7 @@ def data_process_01_webspam_small():
 
 
 def data_process_01_webspam_whole():
+    start_time = time.time()
     data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
     data = dict()
     data['x_tr_vals'] = []
@@ -194,7 +195,7 @@ def data_process_01_webspam_whole():
     data['name'] = '01_webspam'
     data['tr_indices'] = np.arange(280000)
     data['te_indices'] = np.arange(280000, 350000)
-    pkl.dump(data, open(data_path + '01_webspam_350000.pkl', 'wb'))
+    print('total run_time: %.2f' % (time.time() - start_time))
 
 
 def main():

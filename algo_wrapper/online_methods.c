@@ -1041,6 +1041,8 @@ void _algo_ftrl_auc(Data *data,
         }
     }
     cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
+    free(x_nega);
+    free(x_posi);
     free(true_labels);
     free(gt);
     free(zt);
