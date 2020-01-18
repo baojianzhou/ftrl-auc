@@ -53,7 +53,7 @@ void init_data(Data *data, PyArrayObject *x_tr_vals, PyArrayObject *x_tr_inds, P
     data->x_tr_lens = (int *) PyArray_DATA(x_tr_lens);
     data->y_tr = (double *) PyArray_DATA(data_y_tr);
     data->perm = (int *) PyArray_DATA(data_perm);
-    data->n = (int) data_y_tr->dimensions[0];
+    data->n_tr = (int) data_y_tr->dimensions[0];
 }
 
 void init_global_paras(GlobalParas *paras, PyArrayObject *global_paras) {
@@ -75,7 +75,7 @@ static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
                           &para_r)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n);
+    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr);
     _algo_solam(data, paras, re, para_xi, para_r);
     PyObject *results = get_results(data->p, re);
     free(paras), free_algo_results(re), free(data);
@@ -97,7 +97,7 @@ static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
                           &para_xi, &para_l1_reg, &para_l2_reg)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p, data->n);
+    AlgoResults *re = make_algo_results(data->p, data->n_tr);
     _algo_spam(data, paras, re, para_xi, para_l1_reg, para_l2_reg);
     PyObject *results = get_results(data->p, re);
     free(paras), free_algo_results(re), free(data);
@@ -116,7 +116,7 @@ static PyObject *wrap_algo_fsauc(PyObject *self, PyObject *args) {
                           &data->is_sparse, &data->p, &PyArray_Type, &global_paras, &para_r, &para_g)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p, data->n);
+    AlgoResults *re = make_algo_results(data->p, data->n_tr);
     _algo_fsauc(data, paras, re, para_r, para_g);
     PyObject *results = get_results(data->p, re);
     free(paras), free_algo_results(re), free(data);
@@ -137,7 +137,7 @@ static PyObject *wrap_algo_ftrl_auc(PyObject *self, PyObject *args) {
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n);
+    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr);
     _algo_ftrl_auc(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
     free(paras), free_algo_results(re), free(data);
@@ -157,7 +157,7 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n);
+    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr);
     _algo_ftrl_proximal(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
     free(paras), free_algo_results(re), free(data);
@@ -192,7 +192,7 @@ static PyObject *wrap_algo_graph_am(PyObject *self, PyObject *args) {
     // ---
     init_global_paras(paras, global_paras);
     init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p, data->n);
+    AlgoResults *re = make_algo_results(data->p, data->n_tr);
     _algo_sht_am(data, paras, re, version, 1, para_s, para_b, para_xi, para_l2_reg);
     PyObject *results = get_results(data->p, re);
     free_graph_stat(data->graph_stat);

@@ -206,7 +206,7 @@ PCST *make_pcst(const EdgePair *edges,
     for (int ii = 0; ii < n; ii++) {
         pcst->prizes[ii] = prizes[ii];
     }
-    // number of clusters is at most 2*n
+    // number of clusters is at most 2*n_tr
     pcst->clusters = malloc(sizeof(Cluster) * left(n));
     pcst->c_deact = pq_make(3 * n);
     pcst->c_event = pq_make(3 * n);
@@ -214,7 +214,7 @@ PCST *make_pcst(const EdgePair *edges,
     pcst->node_deleted = malloc(sizeof(bool) * n);
     pcst->p3_nei = malloc(sizeof(KeyPairArray) * n);
     pcst->p_comp_visited = malloc(sizeof(KeyPair) * n);
-    // number of cluster queue is at most 2*n
+    // number of cluster queue is at most 2*n_tr
     pcst->c_queue = malloc(sizeof(int) * left(n));
     pcst->final_comp_label = malloc(sizeof(int) * n);
     pcst->final_comp = malloc(sizeof(Array) * g);
@@ -329,7 +329,7 @@ bool run_pcst(PCST *pcst,
         if (uu < 0 || vv < 0 || uu >= pcst->n
             || vv >= pcst->n || cost < 0.0) {
             fprintf(stderr, "ii: %d uu: %d vv: %d cost: %.4f\n", ii, uu, vv, cost);
-            char *error_1 = "node index should be [0,n-1].\n";
+            char *error_1 = "node index should be [0,n_tr-1].\n_tr";
             char *error_2 = "edge endpoint is out of range: too large.\n";
             char *error_3 = "edge endpoint is negative.\n";
             fprintf(stderr, "%s%s%s", error_1, error_2, error_3);

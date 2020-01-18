@@ -60,7 +60,7 @@ typedef struct {
     const double *y_tr;
     const int *perm; // the permutation of given data
     bool is_sparse;
-    int n;
+    int n_tr;
     int p;
     bool is_graph; // this is only for the graph operator.
     int m; // number of edges.
@@ -163,7 +163,7 @@ void _algo_sht_am(Data *data,
  * This function implements the algorithm, FSAUC, proposed in the following paper:
  * ---
  * @inproceedings{liu2018fast,
- * title={Fast stochastic AUC maximization with O (1/n)-convergence rate},
+ * title={Fast stochastic AUC maximization with O (1/n_tr)-convergence rate},
  * author={Liu, Mingrui and Zhang, Xiaoxuan and Chen, Zaiyi and Wang, Xiaoyu and Yang, Tianbao},
  * booktitle={International Conference on Machine Learning},
  * pages={3195--3203},

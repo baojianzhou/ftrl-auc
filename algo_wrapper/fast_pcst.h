@@ -123,7 +123,7 @@ typedef struct {
     int root;
     // number of active clusters in pcst
     int g;
-    // total n nodes in graph
+    // total n_tr nodes in graph
     int n;
     // total m undirected edges in graph
     int m;
@@ -135,12 +135,12 @@ typedef struct {
     double *costs;
     PruningMethod pruning;
     int verbose;
-    // at most 2*n number of clusters.
+    // at most 2*n_tr number of clusters.
     Cluster *clusters;
     int clusters_size;
-    // clusters_deactivation at most 3*n elements.
+    // clusters_deactivation at most 3*n_tr elements.
     PriorityQueue *c_deact;
-    //clusters_next_edge_event at most 3*n elements.
+    //clusters_next_edge_event at most 3*n_tr elements.
     PriorityQueue *c_event;
     // current time
     double cur_time;
@@ -182,7 +182,7 @@ typedef struct {
 
 /**
  * To make run pcst multiple times more efficient. Graph must be connected.
- * @param edges: list of edges. node starts from 0 to n - 1
+ * @param edges: list of edges. node starts from 0 to n_tr - 1
  * @param prizes: list of prizes. non-negative.
  * @param costs: list of costs on edges. must be positive.
  * @param root: -1 default non-root.

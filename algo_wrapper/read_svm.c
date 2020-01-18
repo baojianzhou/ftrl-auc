@@ -61,7 +61,7 @@ void read_problem(const char *filename) {
         // features
         while (1) {
             p = strtok(NULL, " \t");
-            if (p == NULL || *p == '\n') // check '\n' as ' ' may be after the last feature
+            if (p == NULL || *p == '\n') // check '\n_tr' as ' ' may be after the last feature
                 break;
             elements++;
         }

@@ -237,7 +237,7 @@ double _auc_score(const double *true_labels, const double *scores, int len) {
  * ---
  * @article{floyd1975algorithm,
  * title={Algorithm 489: the algorithm SELECT—for finding the ith
- *        smallest of n elements [M1]},
+ *        smallest of n_tr elements [M1]},
  * author={Floyd, Robert W and Rivest, Ronald L},
  * journal={Communications of the ACM},
  * volume={18}, number={3}, pages={173},
@@ -386,7 +386,7 @@ static void _l1ballproj_condat(double *y, double *x, int length, const double a)
 
 void _get_posi_nega_x(double *posi_x, double *nega_x, double *posi_t, double *nega_t, double *prob_p, Data *data) {
     if (data->is_sparse) {
-        for (int i = 0; i < data->n; i++) {
+        for (int i = 0; i < data->n_tr; i++) {
             const int *xt_inds = data->x_tr_inds + data->x_tr_poss[i];
             const double *xt_vals = data->x_tr_vals + data->x_tr_poss[i];
             if (data->y_tr[i] > 0) {
@@ -400,7 +400,7 @@ void _get_posi_nega_x(double *posi_x, double *nega_x, double *posi_t, double *ne
             }
         }
     } else {
-        for (int i = 0; i < data->n; i++) {
+        for (int i = 0; i < data->n_tr; i++) {
             const double *xt = (data->x_tr_vals + i * data->p);
             if (data->y_tr[i] > 0) {
                 (*posi_t)++;
@@ -411,7 +411,7 @@ void _get_posi_nega_x(double *posi_x, double *nega_x, double *posi_t, double *ne
             }
         }
     }
-    *prob_p = (*posi_t) / (data->n * 1.0);
+    *prob_p = (*posi_t) / (data->n_tr * 1.0);
     cblas_dscal(data->p, 1. / (*posi_t), posi_x, 1);
     cblas_dscal(data->p, 1. / (*nega_t), nega_x, 1);
 }
@@ -419,18 +419,18 @@ void _get_posi_nega_x(double *posi_x, double *nega_x, double *posi_t, double *ne
 void _evaluate_aucs(Data *data, double *y_pred, AlgoResults *re, double start_time) {
     double t_eval = clock();
     if (data->is_sparse) {
-        memset(y_pred, 0, sizeof(double) * data->n);
-        for (int q = 0; q < data->n; q++) {
+        memset(y_pred, 0, sizeof(double) * data->n_tr);
+        for (int q = 0; q < data->n_tr; q++) {
             const int *xt_inds = data->x_tr_inds + data->x_tr_poss[q];
             const double *xt_vals = data->x_tr_vals + data->x_tr_poss[q];
             for (int tt = 0; tt < data->x_tr_lens[q]; tt++)
                 y_pred[q] += re->wt[xt_inds[tt]] * xt_vals[tt];
         }
     } else {
-        cblas_dgemv(CblasRowMajor, CblasNoTrans, data->n, data->p, 1.,
+        cblas_dgemv(CblasRowMajor, CblasNoTrans, data->n_tr, data->p, 1.,
                     data->x_tr_vals, data->p, re->wt, 1, 0.0, y_pred, 1);
     }
-    re->aucs[re->auc_len] = _auc_score(data->y_tr, y_pred, data->n);
+    re->aucs[re->auc_len] = _auc_score(data->y_tr, y_pred, data->n_tr);
     re->rts[re->auc_len++] = clock() - start_time - (clock() - t_eval);
 }
 
@@ -461,10 +461,10 @@ bool _algo_solam(Data *data, GlobalParas *paras, AlgoResults *re, double para_xi
     grad_v = malloc(sizeof(double) * (data->p + 2));
     v_bar = malloc(sizeof(double) * (data->p + 2));
     v_bar_prev = calloc((data->p + 2), sizeof(double));
-    y_pred = calloc((size_t) data->n, sizeof(double));
+    y_pred = calloc((size_t) data->n_tr, sizeof(double));
 
-    for (int t = 1; t <= data->n; t++) {
-        int cur_ind = (t - 1) % data->n;
+    for (int t = 1; t <= data->n_tr; t++) {
+        int cur_ind = (t - 1) % data->n_tr;
         const double *xt_vals = data->x_tr_vals + data->x_tr_poss[cur_ind];
         const int *xt_inds = data->x_tr_inds + data->x_tr_poss[cur_ind]; // current sample
         is_p_yt = is_posi(data->y_tr[cur_ind]);
@@ -541,7 +541,7 @@ void _algo_spam(Data *data, GlobalParas *paras, AlgoResults *re,
     double *grad_wt = malloc(sizeof(double) * data->p); // gradient
     double *posi_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=1]
     double *nega_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=-1]
-    double *y_pred = calloc((size_t) data->n, sizeof(double));
+    double *y_pred = calloc((size_t) data->n_tr, sizeof(double));
     double a_wt;
     double b_wt;
     double alpha_wt;
@@ -551,7 +551,7 @@ void _algo_spam(Data *data, GlobalParas *paras, AlgoResults *re,
     double eta_t;
     _get_posi_nega_x(posi_x, nega_x, &posi_t, &nega_t, &prob_p, data);
 
-    for (int t = 1; t <= data->n; t++) {
+    for (int t = 1; t <= data->n_tr; t++) {
         eta_t = para_xi / sqrt(t); // current learning rate
         a_wt = cblas_ddot(data->p, re->wt, 1, posi_x, 1); // update a(wt)
         b_wt = cblas_ddot(data->p, re->wt, 1, nega_x, 1); // para_b(wt)
@@ -562,23 +562,23 @@ void _algo_spam(Data *data, GlobalParas *paras, AlgoResults *re,
         double xtw = 0.0, weight;
         if (data->is_sparse) {
             // receive zt=(xt,yt)
-            xt_inds = data->x_tr_inds + data->x_tr_poss[(t - 1) % data->n];
-            xt_vals = data->x_tr_vals + data->x_tr_poss[(t - 1) % data->n];
-            for (int tt = 0; tt < data->x_tr_lens[(t - 1) % data->n]; tt++) {
+            xt_inds = data->x_tr_inds + data->x_tr_poss[(t - 1) % data->n_tr];
+            xt_vals = data->x_tr_vals + data->x_tr_poss[(t - 1) % data->n_tr];
+            for (int tt = 0; tt < data->x_tr_lens[(t - 1) % data->n_tr]; tt++) {
                 xtw += (re->wt[xt_inds[tt]] * xt_vals[tt]);
             }
-            weight = data->y_tr[(t - 1) % data->n] > 0 ?
+            weight = data->y_tr[(t - 1) % data->n_tr] > 0 ?
                      2. * (1.0 - prob_p) * (xtw - a_wt) -
                      2. * (1.0 + alpha_wt) * (1.0 - prob_p) :
                      2.0 * prob_p * (xtw - b_wt) + 2.0 * (1.0 + alpha_wt) * prob_p;
             // gradient descent
-            for (int tt = 0; tt < data->x_tr_lens[(t - 1) % data->n]; tt++) {
+            for (int tt = 0; tt < data->x_tr_lens[(t - 1) % data->n_tr]; tt++) {
                 re->wt[xt_inds[tt]] += -eta_t * weight * xt_vals[tt];
             }
         } else {
-            xt = data->x_tr_vals + ((t - 1) % data->n) * data->p;
+            xt = data->x_tr_vals + ((t - 1) % data->n_tr) * data->p;
             xtw = cblas_ddot(data->p, re->wt, 1, xt, 1);
-            weight = data->y_tr[(t - 1) % data->n] > 0 ?
+            weight = data->y_tr[(t - 1) % data->n_tr] > 0 ?
                      2. * (1.0 - prob_p) * (xtw - a_wt) -
                      2. * (1.0 + alpha_wt) * (1.0 - prob_p) :
                      2.0 * prob_p * (xtw - b_wt) + 2.0 * (1.0 + alpha_wt) * prob_p;
@@ -620,7 +620,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     double delta = 0.1;
     double eta = para_g;
     double R = para_r;
-    double n_ids = data->n;
+    double n_ids = data->n_tr;
     double alpha_1 = 0.0;
     double alpha;
     double *v_1 = calloc(((unsigned) data->p + 2), sizeof(double));
@@ -643,13 +643,13 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     double *v = malloc(sizeof(double) * (data->p + 2));
     double *vd = malloc(sizeof(double) * (data->p + 2)), ad;
     double *tmp_proj = malloc(sizeof(double) * data->p), beta_new;
-    double *y_pred = calloc((size_t) data->n, sizeof(double));
+    double *y_pred = calloc((size_t) data->n_tr, sizeof(double));
     for (int k = 0; k < m; k++) {
         memset(v_sum, 0, sizeof(double) * (data->p + 2));
         memcpy(v, v_1, sizeof(double) * (data->p + 2));
         alpha = alpha_1;
         for (int kk = 0; kk < n_0; kk++) {
-            int ind = (k * n_0 + kk) % data->n;
+            int ind = (k * n_0 + kk) % data->n_tr;
             double is_posi_y = is_posi(data->y_tr[ind]);
             double is_nega_y = is_nega(data->y_tr[ind]);
             const int *xt_inds;
@@ -778,7 +778,7 @@ void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
 
     double *posi_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=1]
     double *nega_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=-1]
-    double *y_pred = calloc((size_t) data->n, sizeof(double)); // y_predication
+    double *y_pred = calloc((size_t) data->n_tr, sizeof(double)); // y_predication
     double *grad_wt = calloc((size_t) data->p, sizeof(double)); // gradient
     double *var = calloc((size_t) data->p, sizeof(double));
     double *tmp = calloc((size_t) data->p, sizeof(double));
@@ -787,12 +787,12 @@ void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
     double nega_t = 0.0;
     double prob_p;
     int min_b_ind = 0;
-    int max_b_ind = data->n / para_b;
+    int max_b_ind = data->n_tr / para_b;
     _get_posi_nega_x(posi_x, nega_x, &posi_t, &nega_t, &prob_p, data);
     memcpy(var, nega_x, sizeof(double) * data->p);
     cblas_daxpy(data->p, -1.0, posi_x, 1, var, 1);
     cblas_dscal(data->p, 2.0 * prob_p * (1.0 - prob_p), var, 1);
-    for (int t = 1; t <= data->n; t++) { // for each block
+    for (int t = 1; t <= data->n_tr; t++) { // for each block
         // block bi is in [min_b_ind,max_b_ind-1]
         int bi = (int) (lrand48() % (max_b_ind - min_b_ind));
         double utw = cblas_ddot(data->p, re->wt, 1, posi_x, 1);
@@ -800,7 +800,7 @@ void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
         // the gradient of a block training samples
         memset(grad_wt, 0, sizeof(double) * data->p);
         // take care of the last block
-        int cur_b_size = (bi == (max_b_ind - 1) ? para_b + (data->n % para_b) : para_b);
+        int cur_b_size = (bi == (max_b_ind - 1) ? para_b + (data->n_tr % para_b) : para_b);
         // for each block of training samples
         for (int kk = 0; kk < cur_b_size; kk++) {
             int ind = bi * para_b + kk; // initial position of block bi
@@ -984,9 +984,9 @@ void _algo_ftrl_auc(Data *data,
     double *gt = malloc(sizeof(double) * (data->p + 1));
     double *zt = calloc(data->p + 1, sizeof(double));
     double *gt_square = calloc(data->p + 1, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n));
+    double *true_labels = malloc(sizeof(double) * (data->n_tr));
     double prob_p = 0.0;
-    for (int tt = 0; tt < data->n; tt++) {
+    for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
         int ind = data->perm[tt]; // the index of the current training example.
         double weight;
@@ -1062,8 +1062,8 @@ void _algo_ftrl_proximal(Data *data,
     double *gt = malloc(sizeof(double) * (data->p + 1));
     double *zt = calloc(data->p + 1, sizeof(double));
     double *gt_square = calloc(data->p + 1, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n));
-    for (int tt = 0; tt < data->n; tt++) {
+    double *true_labels = malloc(sizeof(double) * (data->n_tr));
+    for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
         int ind = data->perm[tt]; // the index of the current training example.
         double weight;
@@ -1129,12 +1129,12 @@ void _algo_ftrl_proximal_file(Data *data,
     double *gt = malloc(sizeof(double) * (data->p + 1));
     double *zt = calloc(data->p + 1, sizeof(double));
     double *gt_square = calloc(data->p + 1, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n));
+    double *true_labels = malloc(sizeof(double) * (data->n_tr));
 
     FILE *fp = fopen(filename, "r");
     char *line = (char *) malloc((2000) * sizeof(char));
 
-    for (int tt = 0; tt < data->n; tt++) {
+    for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
         int ind = data->perm[tt]; // the index of the current training example.
         double weight;
