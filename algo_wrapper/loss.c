@@ -200,7 +200,7 @@ void least_square_loss_grad(const double *w,
     int i, n = n_samples, p = n_features;
     double *yz = malloc(sizeof(double) * n);
     double *w0 = malloc(sizeof(double) * n);
-    cblas_dcopy(n, y_tr, 1, yz, 1); // y_tr --> yz
+    cblas_dcopy(n, y_tr, 1, yz, 1); // y --> yz
     cblas_dscal(p + 2, 0.0, loss_grad, 1);
     cblas_daxpy(p, eta, w, 1, loss_grad + 1, 1); // l2_lambda*w --> loss_grad
     //Order,TransA, M, N, alpha, A, lda, x, incX, beta, Y, incY

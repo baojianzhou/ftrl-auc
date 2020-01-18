@@ -18,6 +18,7 @@ try:
     import sparse_module
 
     try:
+        from sparse_module import c_algo_ftrl_auc
         from sparse_module import c_algo_ftrl_proximal
     except ImportError:
         print('cannot find some function(s) in sparse_module')
@@ -84,15 +85,21 @@ def pred_auc(data, tr_index, sub_te_ind, wt):
 
 def run_ftrl_proximal(para):
     data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma = para
-    all_indices = data['trial_%d' % trial_i]
-    x_tr_indices = data['trial_%d_tr_indices' % trial_i]
-    x_va_indices = data['trial_%d_va_indices' % trial_i]
-    x_te_indices = data['trial_%d_te_indices' % trial_i]
-    __ = get_data_by_ind(data, all_indices, x_tr_indices)
-    sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr = __
-    wt, aucs, rts = c_algo_ftrl_proximal(sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr, x_tr_indices,
-                                         1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-    pred_auc(data, all_indices, x_te_indices, wt)
+    wt, aucs, rts = c_algo_ftrl_proximal(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+    return para_gamma, para_l1, wt, aucs, rts
+
+
+def run_ftrl_auc(para):
+    data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma = para
+    wt, aucs, rts = c_algo_ftrl_auc(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
     return para_gamma, para_l1, wt, aucs, rts
 
 
@@ -184,12 +191,19 @@ def test_on_03_real_sim():
     data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
     para_space = []
     for trial_i, para_l2, para_beta, para_gamma, para_l1 in product(
-            range(10), [0.0], [1.], [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1],
-            [1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2]):
-        verbose, record_aucs = 0, 0
+            range(10), [0.0], [1.], [10., 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1],
+            [1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2]):
+        verbose, record_aucs = 0, 2
         global_paras = np.asarray([verbose, record_aucs], dtype=float)
         para_space.append((data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma))
-    pool = multiprocessing.Pool(processes=27)
+    para_gamma, para_l1, wt, aucs, rts = run_ftrl_proximal(para_space[0])
+    import matplotlib.pyplot as plt
+    plt.plot(aucs[:10000], label='Proximal')
+    para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc(para_space[0])
+    plt.plot(aucs[:10000], label='AUC')
+    plt.show()
+    exit()
+    pool = multiprocessing.Pool(processes=1)
     ms_res = pool.map(run_ftrl_proximal, para_space)
     pool.close()
     pool.join()

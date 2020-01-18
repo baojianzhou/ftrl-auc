@@ -53,14 +53,19 @@ typedef struct {
 } GraphStat;
 
 typedef struct {
-    const double *x_tr_vals;
-    const int *x_tr_inds;
-    const int *x_tr_poss;
-    const int *x_tr_lens;
-    const double *y_tr;
-    const int *perm; // the permutation of given data
+    const double *x_vals;
+    const int *x_inds;
+    const int *x_poss;
+    const int *x_lens;
+    const double *y;
+    const int *indices; // the permutation of given data
+    const int *tr_indices;
+    const int *va_indices;
+    const int *te_indices;
     bool is_sparse;
     int n_tr;
+    int n_va;
+    int n_te;
     int p;
     bool is_graph; // this is only for the graph operator.
     int m; // number of edges.
@@ -196,14 +201,5 @@ void _algo_ftrl_proximal(Data *data,
                          double para_l2,
                          double para_beta,
                          double para_gamma);
-
-void _algo_ftrl_proximal_file(Data *data,
-                              GlobalParas *paras,
-                              AlgoResults *re,
-                              double para_l1,
-                              double para_l2,
-                              double para_beta,
-                              double para_gamma,
-                              const char *filename);
 
 #endif //SPARSE_AUC_AUC_OPT_METHODS_H
