@@ -23,12 +23,10 @@
 
 typedef struct {
     double *wt;
-    double *wt_prev;
     double *scores;
     double *aucs;
     double *rts;
     int auc_len; // how many auc evaluated.
-    int total_iterations; // total iterations
 } AlgoResults;
 
 

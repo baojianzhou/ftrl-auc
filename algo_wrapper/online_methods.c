@@ -561,7 +561,7 @@ bool _algo_solam(
         memcpy(v_prev, v, sizeof(double) * (data->p + 2));
         // to calculate AUC score, v_var is the current values.
         memcpy(re->wt, v_bar, sizeof(double) * (data->p));
-        if (tt % paras->eval_step == 0) {
+        if (tt % paras->eval_step == 0 || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
             re->aucs[re->auc_len] = eval_auc(data, re, true);
             double end_eval = clock();
@@ -662,9 +662,6 @@ void _algo_spam(Data *data, GlobalParas *paras, AlgoResults *re,
         if (paras->record_aucs == 1) {
             _evaluate_aucs(data, y_pred, re, start_time);
         }
-        // at the end of each epoch, we check the early stop condition.
-        re->total_iterations++;
-        memcpy(re->wt_prev, re->wt, sizeof(double) * (data->p));
     }
     cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
     free(y_pred);
@@ -789,9 +786,6 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
                 memcpy(re->wt, v_ave, sizeof(double) * (data->p));
                 _evaluate_aucs(data, y_pred, re, start_time);
             }
-            // at the end of each epoch, we check the early stop condition.
-            re->total_iterations++;
-            memcpy(re->wt_prev, v_ave, sizeof(double) * (data->p));
         }
         para_r = para_r / 2.;
         double tmp1 = 12. * sqrt(2.) * (2. + sqrt(2. * log(12. / delta))) * R;

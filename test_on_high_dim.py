@@ -207,11 +207,11 @@ def test_on_03_real_sim():
     para_xi, para_r = 1., 1.
     para = (data, trial_i, global_paras, para_xi, para_r)
     trial_i, para_xi, para_r, wt, aucs, rts = run_solam(para)
-    plt.plot(rts, aucs, label='SOLAM')
+    plt.plot(aucs, label='SOLAM')
     para_l1, para_l2, para_beta, para_gamma = 1., 0.0, 1., 0.5
     para = (data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma)
     para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
-    plt.plot(rts, aucs, label='FTRL-AUC-FAST')
+    plt.plot(aucs, label='FTRL-AUC-FAST')
     plt.legend()
     plt.savefig('/home/baojian/results/03_real_sim.png')
     plt.close()
@@ -324,4 +324,18 @@ def test_on_06_pcmac():
 
 
 if __name__ == '__main__':
+    data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    trial_i, para_l2, para_beta = 0, 0.0, 1.0
+    for para_gamma in [0.01, 0.05, 0.1, .5, 1., 5.]:
+        for para_l1 in [0.01, 0.05, 0.1, .5, 1., 5.]:
+            para = (data, 0, global_paras, para_l1, para_l2, para_beta, para_gamma)
+            para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
+            print(np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
+            plt.plot(rts, aucs, label=para_l1)
+        plt.legend()
+        plt.savefig('/home/baojian/results/ftrl_fast_gamma_%.2f.png' % para_gamma)
+        plt.close()
+    exit()
     test_on_03_real_sim()
