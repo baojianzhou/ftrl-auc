@@ -170,7 +170,7 @@ static PyObject *wrap_algo_ftrl_auc_fast(PyObject *self, PyObject *args) {
     AlgoResults *re = make_algo_results(data->p, data->n);
     _algo_ftrl_auc_fast(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p, re);
-    free(re);
+    free_algo_results(re);
     free(paras);
     free(data);
     return results;

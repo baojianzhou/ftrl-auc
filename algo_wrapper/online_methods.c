@@ -1178,10 +1178,6 @@ void _algo_ftrl_auc_fast(Data *data,
             gt_square[xt_inds[ii]] += pow_gt;
         }
         if (tt % paras->eval_step == 0) {
-            if (paras->verbose > 0) {
-                printf("tt: %d auc: %.4f n_va:%d\n",
-                       tt, re->aucs[re->auc_len], data->n_va);
-            }
             double start_eval = clock();
             re->aucs[re->auc_len] = eval_auc(data, re, true);
             double end_eval = clock();
@@ -1189,6 +1185,10 @@ void _algo_ftrl_auc_fast(Data *data,
             eval_time += end_eval - start_eval;
             run_time = (end_eval - start_time) - eval_time;
             re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+            if (paras->verbose > 0) {
+                printf("tt: %d auc: %.4f n_va:%d\n",
+                       tt, re->aucs[re->auc_len - 1], data->n_va);
+            }
         }
     }
     total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
@@ -1199,9 +1199,10 @@ void _algo_ftrl_auc_fast(Data *data,
            data->p, data->n_tr, data->n_va, data->n_te);
     printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
            run_time, eval_time, total_time);
-    printf("va_auc: %.4f\n", eval_auc(data, re, true));
-    printf("te_auc: %.4f\n", eval_auc(data, re, false));
-    printf("sparse_ratio: %.4f\n", get_sparse_ratio(re->wt, data->p));
+    printf("va_auc: %.4f te_auc: %.4f\n",
+           eval_auc(data, re, true), eval_auc(data, re, false));
+    printf("para_l1: %.4f para_gamma: %.4f sparse_ratio: %.4f\n",
+           para_l1, para_gamma, get_sparse_ratio(re->wt, data->p));
     printf("\n-------------------------------------------------------\n");
     free(x_nega);
     free(x_posi);

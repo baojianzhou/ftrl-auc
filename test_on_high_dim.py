@@ -12,6 +12,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam_whole
 from data_preprocess import data_process_01_webspam_small
+import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd())
@@ -307,9 +308,13 @@ if __name__ == '__main__':
     data = pkl.load(open(root_path + '06_pcmac/processed_06_pcmac.pkl'))
     # data = pkl.load(open(root_path + '05_rcv1_bin/processed_05_rcv1_bin.pkl'))
     print(data['n'], data['num_posi'], data['num_nega'], data['p'], data['k'])
-    verbose, eval_step, record_aucs = 0, 10, 1
+    verbose, eval_step, record_aucs = 0, 1, 1
     global_paras = np.asarray([verbose, record_aucs], dtype=float)
-    trial_i, para_l1, para_l2, para_beta, para_gamma = 0, 2., 0.0, 1., 0.9
-    para_space = [(data, 0, global_paras, para_l1, para_l2, para_beta, para_gamma)]
-    para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para_space[0])
-    print(np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
+    trial_i, para_l1, para_l2, para_beta, para_gamma = 0, .5, 0.0, 1., 0.5
+    for para_l1, para_gamma in product([0.1, .5, 1.], [.5, 1., 5.]):
+        para = (data, 0, global_paras, para_l1, para_l2, para_beta, para_gamma)
+        para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
+        print(np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
+        plt.plot(rts, aucs)
+        plt.savefig('/home/baojian/%.1f_%.1f.png' % (para_l1, para_gamma))
+        plt.close()
