@@ -12,7 +12,6 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam_whole
 from data_preprocess import data_process_01_webspam_small
-import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd())
