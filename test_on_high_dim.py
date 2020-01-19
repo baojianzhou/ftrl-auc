@@ -188,37 +188,18 @@ def cv_ftrl_02_new20b():
 
 def test_on_03_real_sim():
     data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
-    print(data['n'], data['num_posi'], data['num_nega'], data['p'], data['k'])
-    para_space = []
-    for trial_i, para_l2, para_beta, para_gamma, para_l1 in product(
-            range(10), [0.0], [1.], [.3, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1],
-            [5e-1, 1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2]):
-        verbose, record_aucs = 0, 1
-        global_paras = np.asarray([verbose, record_aucs], dtype=float)
-        para_space.append((data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma))
-
-    import matplotlib.pyplot as plt
-    start_time = time.time()
-    para_gamma, para_l1, wt, aucs, rts = run_ftrl_proximal(para_space[0])
-    print(time.time() - start_time, aucs[-1], rts[-1])
-    start_time = time.time()
-    # print(aucs[-1], rts[-1], np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
-    # plt.plot(rts[:1000], aucs[:1000], label='Proximal')
-    para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para_space[0])
-    print(time.time() - start_time, aucs[-1], rts[-1])
-    exit()
-    print(aucs[-1], rts[-1], np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
-    plt.plot(rts[:1000], aucs[:1000], label='AUC-FAST')
-    para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc(para_space[0])
-    print(aucs[-1], rts[-1], np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
-    plt.plot(rts[:1000], aucs[:1000], label='AUC')
-    plt.legend()
-    plt.show()
-    exit()
-    pool = multiprocessing.Pool(processes=1)
-    ms_res = pool.map(run_ftrl_proximal, para_space)
-    pool.close()
-    pool.join()
+    print('n: %d num_posi: %d num_nega: %d p: %d k: %d' %
+          (data['n'], data['num_posi'], data['num_nega'], data['p'], data['k']))
+    verbose, eval_step, record_aucs = 1, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    trial_i, para_l1, para_l2, para_beta, para_gamma = 0, .5, 0.0, 1., 0.5
+    for para_l1, para_gamma in product([0.1, .5, 1.], [.5, 1., 5.]):
+        para = (data, 0, global_paras, para_l1, para_l2, para_beta, para_gamma)
+        para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
+        print(np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
+        plt.plot(rts, aucs)
+        plt.savefig('/home/baojian/%.1f_%.1f.png' % (para_l1, para_gamma))
+        plt.close()
 
 
 def test_on_04_webspam_u():
@@ -304,11 +285,10 @@ def main():
     test_on_04_webspam_u()
 
 
-if __name__ == '__main__':
+def test_on_06_pcmac():
     data = pkl.load(open(root_path + '06_pcmac/processed_06_pcmac.pkl'))
-    # data = pkl.load(open(root_path + '05_rcv1_bin/processed_05_rcv1_bin.pkl'))
     print(data['n'], data['num_posi'], data['num_nega'], data['p'], data['k'])
-    verbose, eval_step, record_aucs = 0, 1, 1
+    verbose, eval_step, record_aucs = 1, 1, 1
     global_paras = np.asarray([verbose, record_aucs], dtype=float)
     trial_i, para_l1, para_l2, para_beta, para_gamma = 0, .5, 0.0, 1., 0.5
     for para_l1, para_gamma in product([0.1, .5, 1.], [.5, 1., 5.]):
@@ -318,3 +298,7 @@ if __name__ == '__main__':
         plt.plot(rts, aucs)
         plt.savefig('/home/baojian/%.1f_%.1f.png' % (para_l1, para_gamma))
         plt.close()
+
+
+if __name__ == '__main__':
+    test_on_03_real_sim()

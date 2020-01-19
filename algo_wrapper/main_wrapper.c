@@ -92,22 +92,25 @@ static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
 
 static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
-    PyArrayObject *x_tr_vals, *x_tr_inds, *x_tr_poss, *x_tr_lens, *data_y_tr, *data_perm, *global_paras;
+    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
+    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
-    double para_xi, para_l1_reg, para_l2_reg; //SPAM has three parameters.
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!iiO!ddd",
-                          &PyArray_Type, &x_tr_vals, &PyArray_Type, &x_tr_inds, &PyArray_Type, &x_tr_poss,
-                          &PyArray_Type, &x_tr_lens, &PyArray_Type, &data_y_tr, &PyArray_Type, &data_perm,
-                          &data->is_sparse, &data->p,
-                          &PyArray_Type, &global_paras,
-                          &para_xi, &para_l1_reg, &para_l2_reg)) { return NULL; }
+    double para_xi, para_l1, para_l2; //SPAM has three parameters.
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!ddd",
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
+                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
+                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
+                          &data->is_sparse, &data->p, &PyArray_Type, &global_paras,
+                          &para_xi, &para_l1, &para_l2)) { return NULL; }
     init_global_paras(paras, global_paras);
-    //init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p, data->n_tr);
-    _algo_spam(data, paras, re, para_xi, para_l1_reg, para_l2_reg);
+    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
+    AlgoResults *re = make_algo_results(data->p, data->n);
+    _algo_spam(data, paras, re, para_xi, para_l1, para_l2);
     PyObject *results = get_results(data->p, re);
-    free(paras), free_algo_results(re), free(data);
+    free_algo_results(re);
+    free(paras);
+    free(data);
     return results;
 }
 
@@ -160,9 +163,9 @@ static PyObject *wrap_algo_ftrl_auc_fast(PyObject *self, PyObject *args) {
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_l1, para_l2, para_beta, para_gamma;
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dddd",
-                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss, &PyArray_Type,
-                          &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices, &PyArray_Type, &tr_indices,
-                          &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
+                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
+                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
                           &data->is_sparse, &data->p, &PyArray_Type, &global_paras,
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
     init_global_paras(paras, global_paras);
@@ -183,21 +186,15 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_l1, para_l2, para_beta, para_gamma;
-    printf("test1\n");
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dddd",
                           &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss, &PyArray_Type,
                           &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices, &PyArray_Type, &tr_indices,
                           &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
                           &data->is_sparse, &data->p, &PyArray_Type, &global_paras,
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
-    printf("test2\n");
     init_global_paras(paras, global_paras);
-    printf("test3\n");
     init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
-    printf("test4\n");
     AlgoResults *re = make_algo_results(data->p + 1, data->n);
-    printf("test5\n");
-    printf("n: %d p: %d\n", data->n, data->p);
     _algo_ftrl_proximal(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
     // free(paras), free_algo_results(re), free(data);
