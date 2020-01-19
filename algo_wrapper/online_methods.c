@@ -1091,12 +1091,12 @@ void _algo_ftrl_auc_fast(Data *data,
     double *x_posi = calloc(data->p, sizeof(double));
     double *x_nega = calloc(data->p, sizeof(double));
     double t_posi = 0.0, t_nega = 0.0;
-    double *gt = malloc(sizeof(double) * (data->p));
+    double *gt = calloc(data->p, sizeof(double));
     double *zt = calloc(data->p, sizeof(double));
     double *gt_square = calloc(data->p, sizeof(double));
     double *true_labels = malloc(sizeof(double) * data->n);
-    double prob_p;
-    double utw = 0.0, vtw = 0.0, num_posi = 0.0;
+    double prob_p = 0.0;
+    double utw = 0.0, vtw = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
         // example x_i arrives and then we make prediction.
         // the index of the current training example.
@@ -1105,8 +1105,7 @@ void _algo_ftrl_auc_fast(Data *data,
         bool is_posi_y = is_posi(data->y[ind]);
         const int *xt_inds = data->x_inds + data->x_poss[ind];
         const double *xt_vals = data->x_vals + data->x_poss[ind];
-        num_posi += is_posi_y;
-        prob_p = num_posi / (tt + 1.);
+        prob_p = is_posi_y ? (tt * prob_p + 1.) / (tt + 1.) : (tt * prob_p) / (tt + 1.);
         double xtw = 0.0, ni, pow_gt, weight, lr;
         // calculate the gradient
         if (is_posi_y) {
@@ -1115,6 +1114,7 @@ void _algo_ftrl_auc_fast(Data *data,
                 x_posi[xt_inds[ii]] += xt_vals[ii];
             }
             t_posi += 1.;
+            // utw = cblas_ddot(data->p, x_posi, 1, re->wt, 1) / t_posi;
             utw = (t_posi - 1.) * utw / t_posi + xtw / t_posi;
             weight = 2. * (1.0 - prob_p) * (xtw - vtw - 1.0);
         } else {
@@ -1123,18 +1123,25 @@ void _algo_ftrl_auc_fast(Data *data,
                 x_nega[xt_inds[ii]] += xt_vals[ii];
             }
             t_nega += 1.;
+            // vtw = cblas_ddot(data->p, x_nega, 1, re->wt, 1) / t_nega;
             vtw = (t_nega - 1.) * vtw / t_nega + xtw / t_nega;
             weight = 2. * prob_p * (xtw - utw + 1.0);
         }
         // lazy update the model and make prediction.
         // to make a prediction of AUC score
-        double pred_score = 0.0;
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
             ni = gt_square[xt_inds[ii]];
             re->wt[xt_inds[ii]] = fabs(zt[xt_inds[ii]]) <= para_l1 ?
                                   0.0 : -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
                                         / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
-            pred_score += re->wt[xt_inds[ii]] * xt_vals[ii];
+        }
+        if (false) {
+            for (int ii = 0; ii < data->p; ii++) {
+                ni = gt_square[ii];
+                re->wt[ii] = fabs(zt[ii]) <= para_l1 ?
+                             0.0 : -(zt[ii] - sign(zt[ii]) * para_l1)
+                                   / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
+            }
         }
         // update the learning rate and gradient
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
