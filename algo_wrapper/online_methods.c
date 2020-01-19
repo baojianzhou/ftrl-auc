@@ -562,7 +562,6 @@ bool _algo_solam(
         // to calculate AUC score, v_var is the current values.
         memcpy(re->wt, v_bar, sizeof(double) * (data->p));
         if (tt % paras->eval_step == 0) {
-            printf("%.4f\n", cblas_ddot(data->p, re->wt, 1, re->wt, 1));
             double start_eval = clock();
             re->aucs[re->auc_len] = eval_auc(data, re, true);
             double end_eval = clock();
