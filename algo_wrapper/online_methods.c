@@ -1114,7 +1114,6 @@ void _algo_ftrl_auc_fast(Data *data,
                 x_posi[xt_inds[ii]] += xt_vals[ii];
             }
             t_posi += 1.;
-            // utw = cblas_ddot(data->p, x_posi, 1, re->wt, 1) / t_posi;
             utw = (t_posi - 1.) * utw / t_posi + xtw / t_posi;
             weight = 2. * (1.0 - prob_p) * (xtw - vtw - 1.0);
         } else {
@@ -1123,7 +1122,6 @@ void _algo_ftrl_auc_fast(Data *data,
                 x_nega[xt_inds[ii]] += xt_vals[ii];
             }
             t_nega += 1.;
-            // vtw = cblas_ddot(data->p, x_nega, 1, re->wt, 1) / t_nega;
             vtw = (t_nega - 1.) * vtw / t_nega + xtw / t_nega;
             weight = 2. * prob_p * (xtw - utw + 1.0);
         }
@@ -1135,14 +1133,6 @@ void _algo_ftrl_auc_fast(Data *data,
                                   0.0 : -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
                                         / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
         }
-        if (false) {
-            for (int ii = 0; ii < data->p; ii++) {
-                ni = gt_square[ii];
-                re->wt[ii] = fabs(zt[ii]) <= para_l1 ?
-                             0.0 : -(zt[ii] - sign(zt[ii]) * para_l1)
-                                   / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
-            }
-        }
         // update the learning rate and gradient
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
             gt[xt_inds[ii]] = weight * xt_vals[ii];
@@ -1152,7 +1142,7 @@ void _algo_ftrl_auc_fast(Data *data,
             zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
             gt_square[xt_inds[ii]] += pow_gt;
         }
-        if (tt % 50 == 0) {
+        if (tt % 100 == 0) {
             if (paras->record_aucs == 1) {
                 double t_eval = clock();
                 true_labels[re->auc_len] = data->y[ind];
@@ -1235,7 +1225,7 @@ void _algo_ftrl_proximal(Data *data,
             pow_gt = pow(gt[data->p], 2.);
             zt[data->p] += gt[data->p] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
             gt_square[data->p] += pow_gt;
-            if (tt % 50 == 0) {
+            if (tt % 100 == 0) {
                 if (paras->record_aucs == 1) {
                     double t_eval = clock();
                     true_labels[re->auc_len] = data->y[ind];
