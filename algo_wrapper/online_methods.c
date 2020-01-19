@@ -463,7 +463,9 @@ double eval_auc(Data *data, AlgoResults *re, bool is_va) {
         }
         re->scores[jj] = xtw;
     }
-    return _auc_score(true_labels, re->scores, num_samples);
+    double auc_score = _auc_score(true_labels, re->scores, num_samples);
+    free(true_labels);
+    return auc_score;
 }
 
 double get_sparse_ratio(const double *x, int d) {
@@ -476,7 +478,12 @@ double get_sparse_ratio(const double *x, int d) {
     return sparse_ratio / (double) d;
 }
 
-bool _algo_solam(Data *data, GlobalParas *paras, AlgoResults *re, double para_xi, double para_r) {
+bool _algo_solam(
+        Data *data,
+        GlobalParas *paras,
+        AlgoResults *re,
+        double para_xi,
+        double para_r) {
 
     double start_time = clock();
     openblas_set_num_threads(1);
@@ -508,27 +515,20 @@ bool _algo_solam(Data *data, GlobalParas *paras, AlgoResults *re, double para_xi
     for (int tt = 0; tt < data->n_tr; tt++) {
         // example x_i arrives and then we make prediction.
         // the index of the current training example.
-        int ind = data->indices[tt];
+        int ind = data->tr_indices[tt];
         // receive a training sample.
-        bool is_posi_y = is_posi(data->y[ind]);
-        p_hat = ((tt - 1.) * p_hat + is_posi_y) / tt; // update p_hat
         const double *xt_vals = data->x_vals + data->x_poss[ind];
         const int *xt_inds = data->x_inds + data->x_poss[ind]; // current sample
         is_p_yt = is_posi(data->y[ind]);
         is_n_yt = is_nega(data->y[ind]);
-        p_hat = ((tt - 1.) * p_hat + is_p_yt) / tt; // update p_hat
-        gamma = para_xi / sqrt(tt * 1.); // current learning rate
-        if (data->is_sparse) {
-            vt_dot = 0.0;
-            memset(grad_v, 0, sizeof(double) * (data->p + 2)); // calculate the gradient w
-            for (int kk = 0; kk < data->x_lens[ind]; kk++) {
-                grad_v[xt_inds[kk]] = xt_vals[kk];
-                vt_dot += (v_prev[xt_inds[kk]] * xt_vals[kk]);
-            }
-        } else {
-            const double *xt = data->x_vals + ind * data->p; // current sample
-            memcpy(grad_v, xt, sizeof(double) * data->p); // calculate the gradient w
-            vt_dot = cblas_ddot(data->p, v_prev, 1, xt, 1);
+        p_hat = (tt * p_hat + is_p_yt) / (tt + 1.); // update p_hat
+        gamma = para_xi / sqrt(tt + 1.); // current learning rate
+        vt_dot = 0.0;
+        // calculate the gradient w
+        memset(grad_v, 0, sizeof(double) * (data->p + 2));
+        for (int kk = 0; kk < data->x_lens[ind]; kk++) {
+            grad_v[xt_inds[kk]] = xt_vals[kk];
+            vt_dot += (v_prev[xt_inds[kk]] * xt_vals[kk]);
         }
         wei_posi = 2. * (1. - p_hat) * (vt_dot - v_prev[data->p] - (1. + alpha_prev));
         wei_nega = 2. * p_hat * ((vt_dot - v_prev[data->p + 1]) + (1. + alpha_prev));
@@ -560,7 +560,9 @@ bool _algo_solam(Data *data, GlobalParas *paras, AlgoResults *re, double para_xi
         memcpy(v_bar_prev, v_bar, sizeof(double) * (data->p + 2));
         memcpy(v_prev, v, sizeof(double) * (data->p + 2));
         // to calculate AUC score, v_var is the current values.
+        memcpy(re->wt, v_bar, sizeof(double) * (data->p));
         if (tt % paras->eval_step == 0) {
+            printf("%.4f\n", cblas_ddot(data->p, re->wt, 1, re->wt, 1));
             double start_eval = clock();
             re->aucs[re->auc_len] = eval_auc(data, re, true);
             double end_eval = clock();
@@ -573,12 +575,20 @@ bool _algo_solam(Data *data, GlobalParas *paras, AlgoResults *re, double para_xi
                        tt, re->aucs[re->auc_len - 1], data->n_va);
             }
         }
-        // at the end of each epoch, we check the early stop condition.
-        re->total_iterations++;
-        memcpy(re->wt_prev, v_bar, sizeof(double) * (data->p));
     }
-    memcpy(re->wt, v_bar, sizeof(double) * data->p);
-    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    printf("\n-------------------------------------------------------\n");
+    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+           data->p, data->n_tr, data->n_va, data->n_te);
+    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+           run_time, eval_time, total_time);
+    printf("va_auc: %.4f te_auc: %.4f\n",
+           eval_auc(data, re, true), eval_auc(data, re, false));
+    printf("para_xi: %.4f para_r: %.4f sparse_ratio: %.4f\n",
+           para_xi, para_r, get_sparse_ratio(re->wt, data->p));
+    printf("\n-------------------------------------------------------\n");
     free(y_pred);
     free(v_bar_prev);
     free(v_bar);

@@ -19,6 +19,7 @@ try:
     import sparse_module
 
     try:
+        from sparse_module import c_algo_solam
         from sparse_module import c_algo_ftrl_auc
         from sparse_module import c_algo_ftrl_auc_fast
         from sparse_module import c_algo_ftrl_proximal
@@ -117,6 +118,16 @@ def run_ftrl_auc_fast(para):
     return para_gamma, para_l1, wt, aucs, rts
 
 
+def run_solam(para):
+    data, trial_i, global_paras, para_xi, para_r = para
+    wt, aucs, rts = c_algo_solam(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_xi, para_r)
+    return trial_i, para_xi, para_r, wt, aucs, rts
+
+
 def cv_ftrl_01_webspam_small():
     data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
     verbose, record_aucs = 0, 0
@@ -190,9 +201,20 @@ def test_on_03_real_sim():
     data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
     print('n: %d num_posi: %d num_nega: %d p: %d k: %d' %
           (data['n'], data['num_posi'], data['num_nega'], data['p'], data['k']))
-    verbose, eval_step, record_aucs = 1, 100, 1
+    verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    trial_i, para_l1, para_l2, para_beta, para_gamma = 0, .5, 0.0, 1., 0.5
+    trial_i = 0
+    para_xi, para_r = 1., 1.
+    para = (data, trial_i, global_paras, para_xi, para_r)
+    trial_i, para_xi, para_r, wt, aucs, rts = run_solam(para)
+    plt.plot(rts, aucs, label='SOLAM')
+    para_l1, para_l2, para_beta, para_gamma = 1., 0.0, 1., 0.5
+    para = (data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma)
+    para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
+    plt.plot(rts, aucs, label='FTRL-AUC-FAST')
+    plt.savefig('/home/baojian/%.1f_%.1f.png' % (para_l1, para_gamma))
+    plt.close()
+    exit()
     for para_l1, para_gamma in product([0.1, .5, 1.], [.5, 1., 5.]):
         para = (data, 0, global_paras, para_l1, para_l2, para_beta, para_gamma)
         para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
