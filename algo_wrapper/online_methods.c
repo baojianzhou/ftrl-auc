@@ -42,7 +42,6 @@ void _arg_sort_descend(const double *x, int *sorted_indices, int x_len) {
 AlgoResults *make_algo_results(int data_p, int total_num_eval) {
     AlgoResults *re = malloc(sizeof(AlgoResults));
     re->wt = calloc((size_t) data_p, sizeof(double));
-    re->wt_prev = calloc((size_t) data_p, sizeof(double));
     re->aucs = calloc((size_t) total_num_eval, sizeof(double));
     re->rts = calloc((size_t) total_num_eval, sizeof(double));
     re->scores = calloc((size_t) total_num_eval, sizeof(double));
@@ -54,7 +53,6 @@ bool free_algo_results(AlgoResults *re) {
     free(re->rts);
     free(re->aucs);
     free(re->wt);
-    free(re->wt_prev);
     free(re->scores);
     free(re);
     return true;
@@ -468,14 +466,14 @@ double eval_auc(Data *data, AlgoResults *re, bool is_va) {
     return auc_score;
 }
 
-double get_sparse_ratio(const double *x, int d) {
-    double sparse_ratio = 0.0;
+void cal_sparse_ratio(AlgoResults *re, int d) {
+    re->nonzero_wt = 0;
     for (int i = 0; i < d; i++) {
-        if (x[i] != 0.0) {
-            sparse_ratio += 1.;
+        if (re->wt[i] != 0.0) {
+            re->nonzero_wt += 1;
         }
     }
-    return sparse_ratio / (double) d;
+    re->sparse_ratio = (double) re->nonzero_wt / (double) d;
 }
 
 bool _algo_solam(
@@ -563,7 +561,7 @@ bool _algo_solam(
         memcpy(re->wt, v_bar, sizeof(double) * (data->p));
         if (tt % paras->eval_step == 0 || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            re->aucs[re->auc_len] = eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -578,15 +576,20 @@ bool _algo_solam(
     total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
     eval_time /= CLOCKS_PER_SEC;
     run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    cal_sparse_ratio(re, data->p);
+    re->va_auc = eval_auc(data, re, true);
+    re->te_auc = eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);
     printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
            run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n",
-           eval_auc(data, re, true), eval_auc(data, re, false));
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     printf("para_xi: %.4f para_r: %.4f sparse_ratio: %.4f\n",
-           para_xi, para_r, get_sparse_ratio(re->wt, data->p));
+           para_xi, para_r, re->sparse_ratio);
     printf("\n-------------------------------------------------------\n");
     free(y_pred);
     free(v_bar_prev);
@@ -1012,9 +1015,6 @@ void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
         if (paras->record_aucs == 1) { // to evaluate AUC score
             _evaluate_aucs(data, y_pred, re, start_time);
         }
-        // at the end of each epoch, we check the early stop condition.
-        re->total_iterations++;
-        memcpy(re->wt_prev, re->wt, sizeof(double) * (data->p));
     }
     cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
     free(var);
@@ -1194,7 +1194,7 @@ void _algo_ftrl_auc_fast(Data *data,
             zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
             gt_square[xt_inds[ii]] += pow_gt;
         }
-        if (tt % paras->eval_step == 0) {
+        if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
             re->aucs[re->auc_len] = eval_auc(data, re, true);
             double end_eval = clock();
@@ -1211,15 +1211,20 @@ void _algo_ftrl_auc_fast(Data *data,
     total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
     eval_time /= CLOCKS_PER_SEC;
     run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    cal_sparse_ratio(re, data->p);
+    re->va_auc = eval_auc(data, re, true);
+    re->te_auc = eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);
     printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
            run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n",
-           eval_auc(data, re, true), eval_auc(data, re, false));
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     printf("para_l1: %.4f para_gamma: %.4f sparse_ratio: %.4f\n",
-           para_l1, para_gamma, get_sparse_ratio(re->wt, data->p));
+           para_l1, para_gamma, re->sparse_ratio);
     printf("\n-------------------------------------------------------\n");
     free(x_nega);
     free(x_posi);

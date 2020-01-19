@@ -27,6 +27,13 @@ typedef struct {
     double *aucs;
     double *rts;
     int auc_len; // how many auc evaluated.
+    double run_time;
+    double eval_time;
+    double total_time;
+    double te_auc;
+    double va_auc;
+    int nonzero_wt;
+    double sparse_ratio;
 } AlgoResults;
 
 
