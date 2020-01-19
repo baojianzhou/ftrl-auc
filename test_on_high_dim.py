@@ -212,7 +212,7 @@ def test_on_03_real_sim():
     para = (data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma)
     para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
     plt.plot(rts, aucs, label='FTRL-AUC-FAST')
-    plt.savefig('/home/baojian/%.1f_%.1f.png' % (para_l1, para_gamma))
+    plt.savefig('/home/baojian/03_real_sim.png')
     plt.close()
     exit()
     for para_l1, para_gamma in product([0.1, .5, 1.], [.5, 1., 5.]):
