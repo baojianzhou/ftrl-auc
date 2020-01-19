@@ -66,7 +66,8 @@ void init_data(Data *data, PyArrayObject *x_tr_vals, PyArrayObject *x_tr_inds, P
 void init_global_paras(GlobalParas *paras, PyArrayObject *global_paras) {
     double *arr_paras = (double *) PyArray_DATA(global_paras);
     paras->verbose = (int) arr_paras[0];
-    paras->record_aucs = (int) arr_paras[1];
+    paras->eval_step = (int) arr_paras[1];
+    paras->record_aucs = (int) arr_paras[2];
 }
 
 static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
@@ -88,7 +89,6 @@ static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
     free(paras), free_algo_results(re), free(data);
     return results;
 }
-
 
 static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
@@ -130,7 +130,6 @@ static PyObject *wrap_algo_fsauc(PyObject *self, PyObject *args) {
     return results;
 }
 
-
 static PyObject *wrap_algo_ftrl_auc(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
     PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
@@ -153,7 +152,6 @@ static PyObject *wrap_algo_ftrl_auc(PyObject *self, PyObject *args) {
     return results;
 }
 
-
 static PyObject *wrap_algo_ftrl_auc_fast(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
     PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
@@ -169,10 +167,12 @@ static PyObject *wrap_algo_ftrl_auc_fast(PyObject *self, PyObject *args) {
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr + data->n_va + data->n_te);
+    AlgoResults *re = make_algo_results(data->p, data->n);
     _algo_ftrl_auc_fast(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
-    PyObject *results = get_results(data->p + 1, re);
-    free(paras), free_algo_results(re), free(data);
+    PyObject *results = get_results(data->p, re);
+    free(re);
+    free(paras);
+    free(data);
     return results;
 }
 
@@ -183,18 +183,24 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_l1, para_l2, para_beta, para_gamma;
+    printf("test1\n");
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dddd",
                           &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss, &PyArray_Type,
                           &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices, &PyArray_Type, &tr_indices,
                           &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
                           &data->is_sparse, &data->p, &PyArray_Type, &global_paras,
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
+    printf("test2\n");
     init_global_paras(paras, global_paras);
+    printf("test3\n");
     init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr + data->n_va + data->n_te);
+    printf("test4\n");
+    AlgoResults *re = make_algo_results(data->p + 1, data->n);
+    printf("test5\n");
+    printf("n: %d p: %d\n", data->n, data->p);
     _algo_ftrl_proximal(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
-    free(paras), free_algo_results(re), free(data);
+    // free(paras), free_algo_results(re), free(data);
     return results;
 }
 

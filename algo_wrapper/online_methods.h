@@ -34,6 +34,7 @@ typedef struct {
 
 typedef struct {
     int verbose;
+    int eval_step;
     int record_aucs;
 } GlobalParas;
 

@@ -1071,6 +1071,46 @@ void _algo_ftrl_auc(Data *data,
     free(gt_square);
 }
 
+double eval_auc(Data *data, AlgoResults *re, bool is_va) {
+    double *true_labels;
+    int num_samples;
+    if (is_va) {
+        num_samples = data->n_va;
+    } else {
+        num_samples = data->n_te;
+    }
+    true_labels = malloc(sizeof(double) * num_samples);
+    const int *xt_inds;
+    const double *xt_vals;
+    double xtw;
+    for (int jj = 0; jj < num_samples; jj++) {
+        int cur_index;
+        if (is_va) {
+            cur_index = data->va_indices[jj];
+        } else {
+            cur_index = data->te_indices[jj];
+        }
+        true_labels[jj] = data->y[cur_index];
+        xt_inds = data->x_inds + data->x_poss[cur_index];
+        xt_vals = data->x_vals + data->x_poss[cur_index];
+        xtw = 0.0;
+        for (int kk = 0; kk < data->x_lens[cur_index]; kk++) {
+            xtw += (re->wt[xt_inds[kk]] * xt_vals[kk]);
+        }
+        re->scores[jj] = xtw;
+    }
+    return _auc_score(true_labels, re->scores, num_samples);
+}
+
+double get_sparse_ratio(const double *x, int d) {
+    double sparse_ratio = 0.0;
+    for (int i = 0; i < d; i++) {
+        if (x[i] != 0.0) {
+            sparse_ratio += 1.;
+        }
+    }
+    return sparse_ratio / (double) d;
+}
 
 void _algo_ftrl_auc_fast(Data *data,
                          GlobalParas *paras,
@@ -1081,25 +1121,25 @@ void _algo_ftrl_auc_fast(Data *data,
                          double para_gamma) {
     clock_t start_time = clock();
     openblas_set_num_threads(1);
+    double t_posi = 0.0, t_nega = 0.0;
+    double utw = 0.0, vtw = 0.0;
     double *x_posi = calloc(data->p, sizeof(double));
     double *x_nega = calloc(data->p, sizeof(double));
-    double t_posi = 0.0, t_nega = 0.0;
     double *gt = calloc(data->p, sizeof(double));
     double *zt = calloc(data->p, sizeof(double));
     double *gt_square = calloc(data->p, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * data->n);
+    double *true_labels = calloc(data->n, sizeof(double));
     double prob_p = 0.0;
-    double utw = 0.0, vtw = 0.0;
-    double exe_time = 0.0;
+    double total_time = 0.0, run_time = 0.0, eval_time = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
         // example x_i arrives and then we make prediction.
         // the index of the current training example.
         int ind = data->indices[tt];
         // receive a training sample.
         bool is_posi_y = is_posi(data->y[ind]);
+        prob_p = (tt * prob_p + is_posi_y) / (tt + 1.);
         const int *xt_inds = data->x_inds + data->x_poss[ind];
         const double *xt_vals = data->x_vals + data->x_poss[ind];
-        prob_p = is_posi_y ? (tt * prob_p + 1.) / (tt + 1.) : (tt * prob_p) / (tt + 1.);
         double xtw = 0.0, ni, pow_gt, weight, lr;
         // calculate the gradient
         if (is_posi_y) {
@@ -1123,9 +1163,10 @@ void _algo_ftrl_auc_fast(Data *data,
         // to make a prediction of AUC score
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
             ni = gt_square[xt_inds[ii]];
-            re->wt[xt_inds[ii]] = fabs(zt[xt_inds[ii]]) <= para_l1 ?
-                                  0.0 : -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
-                                        / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
+            re->wt[xt_inds[ii]] =
+                    fabs(zt[xt_inds[ii]]) <= para_l1 ?
+                    0.0 : -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
+                          / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
         }
         // update the learning rate and gradient
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
@@ -1136,27 +1177,32 @@ void _algo_ftrl_auc_fast(Data *data,
             zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
             gt_square[xt_inds[ii]] += pow_gt;
         }
-        double t_eval = clock();
-        if (tt % 1000 == 0 && paras->record_aucs == 1) {
-            for (int jj = 0; jj < data->n_va; jj++) {
-                int cur_index = data->va_indices[jj];
-                true_labels[jj] = data->y[cur_index];
-                xtw = 0.0;
-                for (int kk = 0; kk < data->x_lens[cur_index]; kk++) {
-                    xt_inds = data->x_inds + data->x_poss[cur_index];
-                    xt_vals = data->x_vals + data->x_poss[cur_index];
-                    xtw += (re->wt[xt_inds[kk]] * xt_vals[kk]);
-                }
-                re->scores[jj] = xtw;
+        if (tt % paras->eval_step == 0) {
+            if (paras->verbose > 0) {
+                printf("tt: %d auc: %.4f n_va:%d\n",
+                       tt, re->aucs[re->auc_len], data->n_va);
             }
-            re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, data->n_va);
-            re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
+            double start_eval = clock();
+            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            double end_eval = clock();
+            // this may not be very accurate.
+            eval_time += end_eval - start_eval;
+            run_time = (end_eval - start_time) - eval_time;
+            re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
         }
-        exe_time += (clock() - t_eval);
     }
-    printf("run time: %.4f\n", (((double) clock() - start_time) - exe_time) / CLOCKS_PER_SEC);
-    printf("eval time: %.4f\n", exe_time / CLOCKS_PER_SEC);
-    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    printf("\n-------------------------------------------------------\n");
+    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+           data->p, data->n_tr, data->n_va, data->n_te);
+    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+           run_time, eval_time, total_time);
+    printf("va_auc: %.4f\n", eval_auc(data, re, true));
+    printf("te_auc: %.4f\n", eval_auc(data, re, false));
+    printf("sparse_ratio: %.4f\n", get_sparse_ratio(re->wt, data->p));
+    printf("\n-------------------------------------------------------\n");
     free(x_nega);
     free(x_posi);
     free(true_labels);
@@ -1175,11 +1221,13 @@ void _algo_ftrl_proximal(Data *data,
                          double para_gamma) {
     clock_t start_time = clock();
     openblas_set_num_threads(1);
-    double *gt = malloc(sizeof(double) * (data->p + 1));
+    double *gt = calloc(data->p + 1, sizeof(double));
     double *zt = calloc(data->p + 1, sizeof(double));
     double *gt_square = calloc(data->p + 1, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n_tr + data->n_va + data->n_te));
+    double *true_labels = malloc(sizeof(double) * (data->n));
     double exe_time = 0.0;
+    printf("test6\n");
+    printf("n: %d p: %d\n", data->n, data->p);
     for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
         int ind = data->indices[tt]; // the index of the current training example.
@@ -1216,7 +1264,7 @@ void _algo_ftrl_proximal(Data *data,
         zt[data->p] += gt[data->p] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
         gt_square[data->p] += pow_gt;
         double t_eval = clock();
-        if (tt % 1000 == 0 && paras->record_aucs == 1) {
+        if (tt % 10000 == 0 && paras->record_aucs == 1) {
             for (int jj = 0; jj < data->n_va; jj++) {
                 int cur_index = data->va_indices[jj];
                 true_labels[jj] = data->y[cur_index];
