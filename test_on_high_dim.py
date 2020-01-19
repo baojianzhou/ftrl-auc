@@ -110,12 +110,12 @@ def run_ftrl_auc(para):
 
 def run_ftrl_auc_fast(para):
     data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma = para
-    wt, aucs, rts = c_algo_ftrl_auc_fast(
+    wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-    return para_gamma, para_l1, wt, aucs, rts
+    return {(trial_i, para_l1, para_l2, para_beta, para_gamma): (wt, aucs, rts, metrics)}
 
 
 def run_solam(para):
@@ -323,19 +323,25 @@ def test_on_06_pcmac():
         plt.close()
 
 
-if __name__ == '__main__':
+def cv_ftrl_fast():
     data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    trial_i, para_l2, para_beta = 0, 0.0, 1.0
-    for para_gamma in [0.01, 0.05, 0.1, .5, 1., 5.]:
-        for para_l1 in [0.01, 0.05, 0.1, .5, 1., 5.]:
-            para = (data, 0, global_paras, para_l1, para_l2, para_beta, para_gamma)
-            para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para)
-            print(np.count_nonzero(wt) / float(data['p']), np.linalg.norm(wt))
-            plt.plot(rts, aucs, label=para_l1)
-        plt.legend()
-        plt.savefig('/home/baojian/results/ftrl_fast_gamma_%.2f.png' % para_gamma)
-        plt.close()
-    exit()
-    test_on_03_real_sim()
+    para_l2, para_beta = 0.0, 1.0
+    para_space = []
+    for trial_i in range(10):
+        for para_gamma in [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
+                           1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]:
+            for para_l1 in [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
+                            1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]:
+                para = (data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma)
+                para_space.append(para)
+    pool = multiprocessing.Pool(processes=27)
+    ms_res = pool.map(run_ftrl_auc_fast, para_space)
+    pool.close()
+    pool.join()
+    pkl.dump(ms_res, open(root_path + '03_real_sim/re_03_real_sim.pkl', 'wb'))
+
+
+if __name__ == '__main__':
+    cv_ftrl_fast()

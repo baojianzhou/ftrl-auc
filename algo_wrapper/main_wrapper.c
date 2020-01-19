@@ -28,10 +28,11 @@ static PyObject *test(PyObject *self, PyObject *args) {
 }
 
 PyObject *get_results(int data_p, AlgoResults *re) {
-    PyObject *results = PyTuple_New(3);
+    PyObject *results = PyTuple_New(4);
     PyObject *wt = PyList_New(data_p);
     PyObject *auc = PyList_New(re->auc_len);
     PyObject *rts = PyList_New(re->auc_len);
+    PyObject *metrics = PyList_New(7);
     for (int i = 0; i < data_p; i++) {
         PyList_SetItem(wt, i, PyFloat_FromDouble(re->wt[i]));
     }
@@ -39,9 +40,17 @@ PyObject *get_results(int data_p, AlgoResults *re) {
         PyList_SetItem(auc, i, PyFloat_FromDouble(re->aucs[i]));
         PyList_SetItem(rts, i, PyFloat_FromDouble(re->rts[i]));
     }
+    PyList_SetItem(metrics, 0, PyFloat_FromDouble(re->va_auc));
+    PyList_SetItem(metrics, 1, PyFloat_FromDouble(re->te_auc));
+    PyList_SetItem(metrics, 2, PyFloat_FromDouble(re->nonzero_wt));
+    PyList_SetItem(metrics, 3, PyFloat_FromDouble(re->sparse_ratio));
+    PyList_SetItem(metrics, 4, PyFloat_FromDouble(re->total_time));
+    PyList_SetItem(metrics, 5, PyFloat_FromDouble(re->run_time));
+    PyList_SetItem(metrics, 6, PyFloat_FromDouble(re->eval_time));
     PyTuple_SetItem(results, 0, wt);
     PyTuple_SetItem(results, 1, auc);
     PyTuple_SetItem(results, 2, rts);
+    PyTuple_SetItem(results, 3, metrics);
     return results;
 }
 
