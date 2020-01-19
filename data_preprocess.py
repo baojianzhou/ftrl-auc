@@ -440,7 +440,8 @@ def data_process_05_rcv1_binary(num_trials=10):
         data['trial_%d_tr_indices' % _] = perm[:int(len(perm) * 4. / 6.)]
         data['trial_%d_va_indices' % _] = perm[int(len(perm) * 4. / 6.):int(len(perm) * 5. / 6.)]
         data['trial_%d_te_indices' % _] = perm[int(len(perm) * 5. / 6.):]
-    pkl.dump(data, open(os.path.join(root_path, '05_rcv1_bin/processed_05_rcv1_bin.pkl'), 'wb'))
+    return data
+    # pkl.dump(data, open(os.path.join(root_path, '05_rcv1_bin/processed_05_rcv1_bin.pkl'), 'wb'))
 
 
 def main():
