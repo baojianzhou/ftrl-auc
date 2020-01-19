@@ -1034,10 +1034,12 @@ void _algo_ftrl_auc(Data *data,
                 re->wt[ii] = fabs(zt[ii]) <= para_l1 ? 0.0 : -(zt[ii] - sign(zt[ii]) * para_l1)
                                                              / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
             }
+            double lr;
             for (int ii = 0; ii < data->p; ii++) {
                 ni = gt_square[ii];
                 pow_gt = pow(gt[ii], 2.);
-                zt[ii] += gt[ii] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+                lr = (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+                zt[ii] += gt[ii] - lr * re->wt[ii];
                 gt_square[ii] += pow_gt;
             }
             if (tt % 50 == 0) {
@@ -1077,13 +1079,13 @@ void _algo_ftrl_auc(Data *data,
 }
 
 
-void _algo_ftrl_auc_2(Data *data,
-                      GlobalParas *paras,
-                      AlgoResults *re,
-                      double para_l1,
-                      double para_l2,
-                      double para_beta,
-                      double para_gamma) {
+void _algo_ftrl_auc_fast(Data *data,
+                         GlobalParas *paras,
+                         AlgoResults *re,
+                         double para_l1,
+                         double para_l2,
+                         double para_beta,
+                         double para_gamma) {
     clock_t start_time = clock();
     openblas_set_num_threads(1);
     double *x_posi = calloc(data->p, sizeof(double));
@@ -1092,88 +1094,79 @@ void _algo_ftrl_auc_2(Data *data,
     double *gt = malloc(sizeof(double) * (data->p));
     double *zt = calloc(data->p, sizeof(double));
     double *gt_square = calloc(data->p, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n_tr + data->n_va + data->n_te));
-    double prob_p = 0.0;
+    double *true_labels = malloc(sizeof(double) * data->n);
+    double prob_p;
+    double utw = 0.0, vtw = 0.0, num_posi = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
-        // 1. example x_i arrives and then we make prediction.
-        int ind = data->indices[tt]; // the index of the current training example.
+        // example x_i arrives and then we make prediction.
+        // the index of the current training example.
+        int ind = data->indices[tt];
+        // receive a training sample.
         bool is_posi_y = is_posi(data->y[ind]);
-        prob_p = is_posi_y ? (tt * prob_p + 1.) / (tt + 1.) : (tt * prob_p) / (tt + 1.);
-        if (data->is_sparse) {
-            double xtw = 0.0, ni, pow_gt, wei_x, wei_posi, wei_nega, utw = 0.0, vtw = 0.0;
-            // receive a training sample.
-            const int *xt_inds = data->x_inds + data->x_poss[ind];
-            const double *xt_vals = data->x_vals + data->x_poss[ind];
-            // calculate the gradient
-            memset(gt, 0, sizeof(double) * (data->p));
-            if (is_posi_y) {
-                for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                    xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
-                    x_posi[xt_inds[ii]] += xt_vals[ii];
-                }
-                t_posi += 1.;
-                utw = cblas_ddot(data->p, re->wt, 1, x_posi, 1) / t_posi;
-                wei_x = 2. * (1. - prob_p) * (xtw - utw);
-                wei_nega = 2. * prob_p * (1. - prob_p) * (utw - vtw - 1.0);
-                wei_posi = -wei_nega - wei_x;
-            } else {
-                for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                    xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
-                    x_nega[xt_inds[ii]] += xt_vals[ii];
-                }
-                t_nega += 1.;
-                vtw = cblas_ddot(data->p, re->wt, 1, x_nega, 1) / t_nega;
-                wei_x = 2. * prob_p * (xtw - vtw);
-                wei_posi = 2. * prob_p * (1. - prob_p) * (utw - vtw - 1.0);
-                wei_nega = -wei_posi - wei_x;
-            }
-            for (int kk = 0; kk < data->x_lens[ind]; kk++) {
-                gt[xt_inds[kk]] += (wei_x * xt_vals[kk]);
-            }
-            if (t_posi > 0.0) {
-                cblas_daxpy(data->p, wei_posi / t_posi, x_posi, 1, gt, 1);
-            }
-            if (t_nega > 0.0) {
-                cblas_daxpy(data->p, wei_nega / t_nega, x_nega, 1, gt, 1);
-            }
-            // lazy update the model and make prediction.
+        const int *xt_inds = data->x_inds + data->x_poss[ind];
+        const double *xt_vals = data->x_vals + data->x_poss[ind];
+        num_posi += is_posi_y;
+        prob_p = num_posi / (tt + 1.);
+        double xtw = 0.0, ni, pow_gt, weight, lr;
+        // calculate the gradient
+        if (is_posi_y) {
             for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                ni = gt_square[xt_inds[ii]];
-                re->wt[xt_inds[ii]] = fabs(zt[xt_inds[ii]]) <= para_l1 ? 0.0 :
-                                      -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
-                                      / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+                x_posi[xt_inds[ii]] += xt_vals[ii];
             }
-            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                ni = gt_square[xt_inds[ii]];
-                pow_gt = pow(gt[xt_inds[ii]], 2.);
-                zt[xt_inds[ii]] += gt[xt_inds[ii]] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
-                gt_square[xt_inds[ii]] += pow_gt;
-            }
-            if (tt % 50 == 0) {
-                if (paras->record_aucs == 1) {
-                    double t_eval = clock();
-                    true_labels[re->auc_len] = data->y[ind];
-                    re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, tt);
-                    re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
-                } else if (paras->record_aucs == 2) {
-                    double t_eval = clock();
-                    for (int jj = 0; jj < data->n_va; jj++) {
-                        int cur_index = data->va_indices[jj];
-                        true_labels[jj] = data->y[cur_index];
-                        xtw = 0.0;
-                        for (int kk = 0; kk < data->x_lens[cur_index]; kk++) {
-                            xt_inds = data->x_inds + data->x_poss[cur_index];
-                            xt_vals = data->x_vals + data->x_poss[cur_index];
-                            xtw += (re->wt[xt_inds[kk]] * xt_vals[kk]);
-                        }
-                        re->scores[jj] = xtw;
-                    }
-                    re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, data->n_va);
-                    re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
-                }
-            }
+            t_posi += 1.;
+            utw = (t_posi - 1.) * utw / t_posi + xtw / t_posi;
+            weight = 2. * (1.0 - prob_p) * (xtw - vtw - 1.0);
         } else {
-
+            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+                x_nega[xt_inds[ii]] += xt_vals[ii];
+            }
+            t_nega += 1.;
+            vtw = (t_nega - 1.) * vtw / t_nega + xtw / t_nega;
+            weight = 2. * prob_p * (xtw - utw + 1.0);
+        }
+        // lazy update the model and make prediction.
+        // to make a prediction of AUC score
+        double pred_score = 0.0;
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            ni = gt_square[xt_inds[ii]];
+            re->wt[xt_inds[ii]] = fabs(zt[xt_inds[ii]]) <= para_l1 ?
+                                  0.0 : -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
+                                        / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
+            pred_score += re->wt[xt_inds[ii]] * xt_vals[ii];
+        }
+        // update the learning rate and gradient
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            gt[xt_inds[ii]] = weight * xt_vals[ii];
+            ni = gt_square[xt_inds[ii]];
+            pow_gt = pow(gt[xt_inds[ii]], 2.);
+            lr = (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+            zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
+            gt_square[xt_inds[ii]] += pow_gt;
+        }
+        if (tt % 50 == 0) {
+            if (paras->record_aucs == 1) {
+                double t_eval = clock();
+                true_labels[re->auc_len] = data->y[ind];
+                re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, tt);
+                re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
+            } else if (paras->record_aucs == 2) {
+                double t_eval = clock();
+                for (int jj = 0; jj < data->n_va; jj++) {
+                    int cur_index = data->va_indices[jj];
+                    true_labels[jj] = data->y[cur_index];
+                    xtw = 0.0;
+                    for (int kk = 0; kk < data->x_lens[cur_index]; kk++) {
+                        xt_inds = data->x_inds + data->x_poss[cur_index];
+                        xt_vals = data->x_vals + data->x_poss[cur_index];
+                        xtw += (re->wt[xt_inds[kk]] * xt_vals[kk]);
+                    }
+                    re->scores[jj] = xtw;
+                }
+                re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, data->n_va);
+                re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
+            }
         }
     }
     cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
@@ -1218,14 +1211,15 @@ void _algo_ftrl_proximal(Data *data,
                 xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
             }
             // make a prediction
-            double z0 = (data->y[ind]) * (xtw + re->wt[data->p]);
+            double z0 = (data->y[ind]) * (xtw + re->wt[data->p]), lr;
             // calculate the gradient of w
             weight = -(data->y[ind]) * expit(-z0);
             for (int ii = 0; ii < data->x_lens[ind]; ii++) {
                 gt[xt_inds[ii]] = weight * xt_vals[ii];
                 ni = gt_square[xt_inds[ii]];
                 pow_gt = pow(gt[xt_inds[ii]], 2.);
-                zt[xt_inds[ii]] += gt[xt_inds[ii]] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+                lr = (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+                zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
                 gt_square[xt_inds[ii]] += pow_gt;
             }
             // calculate the gradient of intercept

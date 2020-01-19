@@ -19,6 +19,7 @@ try:
 
     try:
         from sparse_module import c_algo_ftrl_auc
+        from sparse_module import c_algo_ftrl_auc_fast
         from sparse_module import c_algo_ftrl_proximal
     except ImportError:
         print('cannot find some function(s) in sparse_module')
@@ -96,6 +97,16 @@ def run_ftrl_proximal(para):
 def run_ftrl_auc(para):
     data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma = para
     wt, aucs, rts = c_algo_ftrl_auc(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+    return para_gamma, para_l1, wt, aucs, rts
+
+
+def run_ftrl_auc_fast(para):
+    data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma = para
+    wt, aucs, rts = c_algo_ftrl_auc_fast(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
@@ -197,10 +208,15 @@ def test_on_03_real_sim():
         global_paras = np.asarray([verbose, record_aucs], dtype=float)
         para_space.append((data, trial_i, global_paras, para_l1, para_l2, para_beta, para_gamma))
     para_gamma, para_l1, wt, aucs, rts = run_ftrl_proximal(para_space[0])
+    print(aucs[-1], rts[-1])
     import matplotlib.pyplot as plt
-    plt.plot(aucs[:10000], label='Proximal')
+    plt.plot(aucs[:1000], label='Proximal')
     para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc(para_space[0])
-    plt.plot(aucs[:10000], label='AUC')
+    print(aucs[-1], rts[-1])
+    plt.plot(aucs[:1000], label='AUC')
+    para_gamma, para_l1, wt, aucs, rts = run_ftrl_auc_fast(para_space[0])
+    print(aucs[-1], rts[-1])
+    plt.plot(aucs[:1000], label='AUC-FAST')
     plt.show()
     exit()
     pool = multiprocessing.Pool(processes=1)

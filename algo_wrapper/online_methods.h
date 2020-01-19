@@ -63,6 +63,7 @@ typedef struct {
     const int *va_indices;
     const int *te_indices;
     bool is_sparse;
+    int n; // total numbers
     int n_tr;
     int n_va;
     int n_te;
@@ -193,6 +194,15 @@ void _algo_ftrl_auc(Data *data,
                     double para_l2,
                     double para_beta,
                     double para_gamma);
+
+
+void _algo_ftrl_auc_fast(Data *data,
+                         GlobalParas *paras,
+                         AlgoResults *re,
+                         double para_l1,
+                         double para_l2,
+                         double para_beta,
+                         double para_gamma);
 
 void _algo_ftrl_proximal(Data *data,
                          GlobalParas *paras,

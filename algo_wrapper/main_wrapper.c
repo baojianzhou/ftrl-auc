@@ -60,6 +60,7 @@ void init_data(Data *data, PyArrayObject *x_tr_vals, PyArrayObject *x_tr_inds, P
     data->n_tr = (int) tr_indices->dimensions[0];
     data->n_va = (int) va_indices->dimensions[0];
     data->n_te = (int) te_indices->dimensions[0];
+    data->n = data->n_tr + data->n_va + data->n_te;
 }
 
 void init_global_paras(GlobalParas *paras, PyArrayObject *global_paras) {
@@ -145,8 +146,31 @@ static PyObject *wrap_algo_ftrl_auc(PyObject *self, PyObject *args) {
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr+data->n_va+data->n_te);
+    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr + data->n_va + data->n_te);
     _algo_ftrl_auc(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
+    PyObject *results = get_results(data->p + 1, re);
+    free(paras), free_algo_results(re), free(data);
+    return results;
+}
+
+
+static PyObject *wrap_algo_ftrl_auc_fast(PyObject *self, PyObject *args) {
+    if (self != NULL) { printf("%zd", self->ob_refcnt); }
+    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
+    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
+    Data *data = malloc(sizeof(Data));
+    GlobalParas *paras = malloc(sizeof(GlobalParas));
+    double para_l1, para_l2, para_beta, para_gamma;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dddd",
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss, &PyArray_Type,
+                          &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices, &PyArray_Type, &tr_indices,
+                          &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
+                          &data->is_sparse, &data->p, &PyArray_Type, &global_paras,
+                          &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
+    init_global_paras(paras, global_paras);
+    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
+    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr + data->n_va + data->n_te);
+    _algo_ftrl_auc_fast(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
     free(paras), free_algo_results(re), free(data);
     return results;
@@ -167,7 +191,7 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
                           &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
-    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr+data->n_va+data->n_te);
+    AlgoResults *re = make_algo_results(data->p + 1, data->n_tr + data->n_va + data->n_te);
     _algo_ftrl_proximal(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
     free(paras), free_algo_results(re), free(data);
@@ -219,6 +243,7 @@ static PyMethodDef sparse_methods[] = { // hello_name
         {"c_algo_solam",         wrap_algo_solam,         METH_VARARGS, "docs"},
         {"c_algo_spam",          wrap_algo_spam,          METH_VARARGS, "docs"},
         {"c_algo_ftrl_auc",      wrap_algo_ftrl_auc,      METH_VARARGS, "docs"},
+        {"c_algo_ftrl_auc_fast", wrap_algo_ftrl_auc_fast, METH_VARARGS, "docs"},
         {"c_algo_ftrl_proximal", wrap_algo_ftrl_proximal, METH_VARARGS, "docs"},
         {"c_algo_graph_am",      wrap_algo_graph_am,      METH_VARARGS, "docs"},
         {"c_algo_fsauc",         wrap_algo_fsauc,         METH_VARARGS, "docs"},
