@@ -382,10 +382,12 @@ def run_high_dimensional(method, dataset, num_cpus):
     pkl.dump(ms_res, open(f_name, 'wb'))
 
 
-def result_statistics():
+def result_statistics(dataset='05_rcv1_bin'):
     aucs = []
-    for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
-        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+    list_methods = ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']
+    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'ftrl_proximal']
+    for method in list_methods:
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
         for item in results:
             metrics = item[-1]
@@ -395,8 +397,8 @@ def result_statistics():
         aucs.append('$\pm$'.join([a, b]))
     print(' & '.join(aucs))
     run_times = []
-    for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
-        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+    for method in list_methods:
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         run_time = []
         for item in results:
             metrics = item[-1]
@@ -406,8 +408,8 @@ def result_statistics():
         run_times.append('$\pm$'.join([a, b]))
     print(' & '.join(run_times))
     sparse_ratios = []
-    for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
-        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+    for method in list_methods:
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         sparse_ratio = []
         for item in results:
             metrics = item[-1]
