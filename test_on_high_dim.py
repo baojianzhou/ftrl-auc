@@ -356,10 +356,11 @@ def cv_fsauc(input_para):
 def test_on_03_real_sim(method):
     data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
     para_space = [(data, trial_i) for trial_i in range(10)]
-    pool = multiprocessing.Pool(processes=27)
+    pool = multiprocessing.Pool(processes=1)
     if method == 'ftrl_fast':
         ms_res = pool.map(cv_ftrl_fast, para_space)
     elif method == 'fsauc':
+        cv_fsauc(para_space[0])
         ms_res = pool.map(cv_fsauc, para_space)
     else:
         ms_res = None
