@@ -297,12 +297,9 @@ def test_on_06_pcmac():
 
 def cv_ftrl_fast(input_para):
     data, trial_i = input_para
-    best_auc, para = None, None
-    cv_res = dict()
-    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
-                                        1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
-                                        1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
+    best_auc, para, cv_res = None, None, dict()
+    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
+                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
         para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
         wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
@@ -327,10 +324,8 @@ def cv_ftrl_fast(input_para):
 
 def cv_fsauc(input_para):
     data, trial_i = input_para
-    best_auc, para = None, None
-    cv_res = dict()
-    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float),
-                                  2. ** np.arange(-10, 11, 1, dtype=float)):
+    best_auc, para, cv_res = None, None, dict()
+    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float), 2. ** np.arange(-10, 11, 1, dtype=float)):
         verbose, eval_step, record_aucs = 0, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
         wt, aucs, rts, metrics = c_algo_fsauc(
@@ -342,7 +337,7 @@ def cv_fsauc(input_para):
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
             best_auc, para = va_auc, (para_r, para_g)
-    para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, 100, 1
+    verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_r, para_g = para
     wt, aucs, rts, metrics = c_algo_fsauc(
@@ -353,20 +348,21 @@ def cv_fsauc(input_para):
     return trial_i, para_r, para_g, cv_res, wt, aucs, rts, metrics
 
 
-def test_on_03_real_sim(method):
-    data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
+def run_high_dimensional(method, dataset):
+    f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
+    data = pkl.load(open(f_name))
     para_space = [(data, trial_i) for trial_i in range(10)]
-    pool = multiprocessing.Pool(processes=1)
+    pool = multiprocessing.Pool(processes=10)
     if method == 'ftrl_fast':
         ms_res = pool.map(cv_ftrl_fast, para_space)
     elif method == 'fsauc':
-        cv_fsauc(para_space[0])
         ms_res = pool.map(cv_fsauc, para_space)
     else:
         ms_res = None
     pool.close()
     pool.join()
-    pkl.dump(ms_res, open(root_path + '03_real_sim/re_03_real_sim.pkl', 'wb'))
+    f_name = root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)
+    pkl.dump(ms_res, open(f_name, 'wb'))
 
 
 def result_analysis():
@@ -381,7 +377,7 @@ def result_analysis():
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'run_method':
-        test_on_03_real_sim(method=sys.argv[2])
+    if sys.argv[1] == 'run':
+        run_high_dimensional(method=sys.argv[2], dataset=sys.argv[3])
     elif sys.argv[1] == 'show_auc':
         result_analysis()
