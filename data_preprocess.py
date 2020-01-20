@@ -597,8 +597,10 @@ def data_process_07_url(num_trials=10):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = len(feature_indices)
-    assert data['p'] == (max_id - min_id + 1)
+    data['p'] = (max_id - min_id + 1)
+    if data['p'] != (max_id - min_id + 1):
+        print('number of nonzero features: %d' % len(feature_indices))
+        assert data['p'] == (max_id - min_id + 1)
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
     assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
     data['num_posi'] = len([_ for _ in data['y_tr'] if _ > 0])
