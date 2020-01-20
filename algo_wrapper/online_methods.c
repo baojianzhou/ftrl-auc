@@ -765,7 +765,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
         memcpy(v, v_1, sizeof(double) * (data->p + 2));
         alpha = alpha_1;
         for (int kk = 0; kk < n_0; kk++) {
-            int ind = (k * n_0 + kk) % data->n_tr;
+            int ind = data->tr_indices[k * n_0 + kk];
             double is_posi_y = is_posi(data->y[ind]);
             double is_nega_y = is_nega(data->y[ind]);
             const int *xt_inds;

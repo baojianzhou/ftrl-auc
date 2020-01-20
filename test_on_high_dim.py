@@ -282,7 +282,7 @@ def cv_ftrl_proximal(input_para):
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_l1, para_l2, para_beta, para_gamma = para
-    wt, aucs, rts, metrics = c_algo_spam(
+    wt, aucs, rts, metrics = c_algo_ftrl_proximal(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
@@ -382,7 +382,9 @@ def result_analysis():
         for trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics in results:
             te_auc.append(metrics[1])
             sparse_ratio.append(metrics[3])
-        print(method, np.mean(np.asarray(te_auc)), np.std(np.asarray(te_auc)), np.std(np.asarray(sparse_ratio)))
+        print(method, np.mean(np.asarray(te_auc)),
+              np.std(np.asarray(te_auc)),
+              np.mean(np.asarray(sparse_ratio)))
 
 
 if __name__ == '__main__':
