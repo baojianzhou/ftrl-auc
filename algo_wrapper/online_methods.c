@@ -829,7 +829,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
                 re->aucs[re->auc_len] = eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
-                eval_time += end_eval - start_eval;
+                eval_time += (end_eval - start_eval);
                 run_time = (end_eval - start_time) - eval_time;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
