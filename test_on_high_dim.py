@@ -384,23 +384,22 @@ def run_high_dimensional(method, dataset, num_cpus):
     pkl.dump(ms_res, open(f_name, 'wb'))
 
 
-def run_huge_dimensional(method, dataset):
+def run_huge_dimensional(method, dataset, task_id):
     if dataset == '07_url':
         data = data_process_07_url()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
-    results = []
-    for trial_i in range(10):
-        if method == 'ftrl_fast':
-            ms_res = cv_ftrl_fast((data, trial_i))
-        elif method == 'ftrl_proximal':
-            ms_res = cv_ftrl_proximal((data, trial_i))
-        else:
-            ms_res = None
-        results.append(ms_res)
-    f_name = root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)
-    pkl.dump(results, open(f_name, 'wb'))
+    trial_i = int(task_id)
+    if method == 'ftrl_fast':
+        ms_res = cv_ftrl_fast((data, trial_i))
+    elif method == 'ftrl_proximal':
+        ms_res = cv_ftrl_proximal((data, trial_i))
+    else:
+        ms_res = None
+    f_name = root_path + '%s/re_%s_%s_%d.pkl' % \
+             (dataset, dataset, method, task_id)
+    pkl.dump(ms_res, open(f_name, 'wb'))
 
 
 def result_statistics(dataset='05_rcv1_bin'):
@@ -472,7 +471,8 @@ if __name__ == '__main__':
                              num_cpus=int(sys.argv[4]))
     elif sys.argv[1] == 'run_huge':
         run_huge_dimensional(method=sys.argv[2],
-                             dataset=sys.argv[3])
+                             dataset=sys.argv[3],
+                             task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
         result_statistics()
     elif sys.argv[1] == 'show_curves':
