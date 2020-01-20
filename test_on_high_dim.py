@@ -126,7 +126,7 @@ def cv_ftrl_fast(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-    return trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, metrics
 
 
 def cv_fsauc(input_para):
@@ -152,7 +152,7 @@ def cv_fsauc(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_r, para_g)
-    return trial_i, para_r, para_g, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_r, para_g), cv_res, wt, aucs, rts, metrics
 
 
 def cv_solam(input_para):
@@ -178,7 +178,7 @@ def cv_solam(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_xi, para_r)
-    return trial_i, para_xi, para_r, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_xi, para_r), cv_res, wt, aucs, rts, metrics
 
 
 def cv_spam_l1(input_para):
@@ -205,7 +205,7 @@ def cv_spam_l1(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_xi, para_l1, 0.0)
-    return trial_i, para_xi, para_l1, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_xi, para_l1), cv_res, wt, aucs, rts, metrics
 
 
 def cv_spam_l2(input_para):
@@ -232,7 +232,7 @@ def cv_spam_l2(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_xi, 0.0, para_l2)
-    return trial_i, para_xi, para_l2, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_xi, para_l2), cv_res, wt, aucs, rts, metrics
 
 
 def cv_spam_l1l2(input_para):
@@ -260,7 +260,7 @@ def cv_spam_l1l2(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_xi, para_l1, para_l2)
-    return trial_i, para_xi, para_l1, para_l2, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_xi, para_l1, para_l2), cv_res, wt, aucs, rts, metrics
 
 
 def cv_ftrl_proximal(input_para):
@@ -376,15 +376,39 @@ def run_high_dimensional(method, dataset, num_cpus):
 
 
 def result_analysis():
-    for method in ['fsauc', 'ftrl_auc_fast', 'solam', 'spam_l1', 'spam_l2']:
+    aucs = []
+    for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
         results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
-        te_auc, sparse_ratio = [], []
-        for trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics in results:
+        te_auc = []
+        for item in results:
+            metrics = item[-1]
             te_auc.append(metrics[1])
+        a = ("%0.5f" % float(np.mean(np.asarray(te_auc)))).lstrip('0')
+        b = ("%0.5f" % float(np.std(np.asarray(te_auc)))).lstrip('0')
+        aucs.append('$\pm$'.join([a, b]))
+    print(' & '.join(aucs))
+    run_times = []
+    for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
+        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+        run_time = []
+        for item in results:
+            metrics = item[-1]
+            run_time.append(metrics[5])
+        a = ("%0.3f" % float(np.mean(np.asarray(run_time))))
+        b = ("%0.3f" % float(np.std(np.asarray(run_time))))
+        run_times.append('$\pm$'.join([a, b]))
+    print(' & '.join(run_times))
+    sparse_ratios = []
+    for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
+        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+        sparse_ratio = []
+        for item in results:
+            metrics = item[-1]
             sparse_ratio.append(metrics[3])
-        print(method, np.mean(np.asarray(te_auc)),
-              np.std(np.asarray(te_auc)),
-              np.mean(np.asarray(sparse_ratio)))
+        a = ("%0.4f" % float(np.mean(np.asarray(sparse_ratio)))).lstrip('0')
+        b = ("%0.4f" % float(np.std(np.asarray(sparse_ratio)))).lstrip('0')
+        sparse_ratios.append('$\pm$'.join([a, b]))
+    print(' & '.join(sparse_ratios))
 
 
 if __name__ == '__main__':
