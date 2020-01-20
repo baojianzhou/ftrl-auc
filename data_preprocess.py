@@ -574,6 +574,8 @@ def data_process_07_url(num_trials=10):
             items = each_line.lstrip().rstrip().split(' ')
             data['y_tr'].append(int(items[0]))
             cur_values = [float(_.split(':')[1]) for _ in items[1:]]
+            cur_values = np.asarray(cur_values) / np.linalg.norm(cur_values)
+            cur_values = list(cur_values)
             cur_indices = [int(_.split(':')[0]) - 1 for _ in items[1:]]
             data['x_tr_vals'].extend(cur_values)
             data['x_tr_inds'].extend(cur_indices)
