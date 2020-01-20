@@ -348,6 +348,32 @@ def cv_fsauc(input_para):
     return trial_i, para_r, para_g, cv_res, wt, aucs, rts, metrics
 
 
+def cv_solam(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float), 2. ** np.arange(-10, 11, 1, dtype=float)):
+        verbose, eval_step, record_aucs = 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_solam(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_r, para_g)
+        cv_res[(trial_i, para_r, para_g)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_r, para_g)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_r, para_g = para
+    wt, aucs, rts, metrics = c_algo_solam(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_r, para_g)
+    return trial_i, para_r, para_g, cv_res, wt, aucs, rts, metrics
+
+
 def run_high_dimensional(method, dataset, num_cpus):
     f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
     data = pkl.load(open(f_name))
@@ -357,6 +383,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         ms_res = pool.map(cv_ftrl_fast, para_space)
     elif method == 'fsauc':
         ms_res = pool.map(cv_fsauc, para_space)
+    elif method == 'solam':
+        ms_res = pool.map(cv_solam, para_space)
     else:
         ms_res = None
     pool.close()

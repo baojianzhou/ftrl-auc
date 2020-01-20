@@ -144,7 +144,9 @@ static PyObject *wrap_algo_fsauc(PyObject *self, PyObject *args) {
     AlgoResults *re = make_algo_results(data->p, data->n);
     _algo_fsauc(data, paras, re, para_r, para_g);
     PyObject *results = get_results(data->p, re);
-    free(paras), free_algo_results(re), free(data);
+    free_algo_results(re);
+    free(paras);
+    free(data);
     return results;
 }
 
