@@ -290,6 +290,60 @@ def cv_ftrl_proximal(input_para):
     return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
 
 
+def cv_rda_l1(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
+                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
+        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_rda_l1(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+        cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_l1, para_l2, para_beta, para_gamma)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_l1, para_l2, para_beta, para_gamma = para
+    wt, aucs, rts, metrics = c_algo_rda_l1(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+    return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
+
+
+def cv_adagrad(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
+                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
+        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_adagrad(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+        cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_l1, para_l2, para_beta, para_gamma)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_l1, para_l2, para_beta, para_gamma = para
+    wt, aucs, rts, metrics = c_algo_adagrad(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+    return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
+
+
 def run_high_dimensional(method, dataset, num_cpus):
     f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
     data = pkl.load(open(f_name))
@@ -309,6 +363,10 @@ def run_high_dimensional(method, dataset, num_cpus):
         ms_res = pool.map(cv_spam_l1l2, para_space)
     elif method == 'ftrl_proximal':
         ms_res = pool.map(cv_ftrl_proximal, para_space)
+    elif method == 'rda_l1':
+        ms_res = pool.map(cv_rda_l1, para_space)
+    elif method == 'adagrad':
+        ms_res = pool.map(cv_adagrad, para_space)
     else:
         ms_res = None
     pool.close()
@@ -318,14 +376,13 @@ def run_high_dimensional(method, dataset, num_cpus):
 
 
 def result_analysis():
-    results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim.pkl'))
-    te_auc, sparse_ratio = [], []
-    for trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics in results:
-        print(trial_i, metrics[1])
-        te_auc.append(metrics[1])
-        sparse_ratio.append(metrics[3])
-    print(np.mean(np.asarray(te_auc)), np.std(np.asarray(te_auc)))
-    print(np.mean(np.asarray(sparse_ratio)), np.std(np.asarray(sparse_ratio)))
+    for method in ['fsauc', 'ftrl_auc_fast', 'solam', 'spam_l1', 'spam_l2']:
+        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+        te_auc, sparse_ratio = [], []
+        for trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics in results:
+            te_auc.append(metrics[1])
+            sparse_ratio.append(metrics[3])
+        print(method, np.mean(np.asarray(te_auc)), np.std(np.asarray(te_auc)), np.std(np.asarray(sparse_ratio)))
 
 
 if __name__ == '__main__':
