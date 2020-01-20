@@ -254,11 +254,19 @@ def data_process_02_news20b(num_trials=10):
     data['posi_ratio'] = float(data['num_posi']) / float(data['num_nega'])
     data['num_nonzeros'] = len(data['x_tr_vals'])
     for _ in range(num_trials):
-        perm = np.random.permutation(data['n'])
-        data['trial_%d_all_indices' % _] = perm
-        data['trial_%d_tr_indices' % _] = perm[:int(len(perm) * 4. / 6.)]
-        data['trial_%d_va_indices' % _] = perm[int(len(perm) * 4. / 6.):int(len(perm) * 5. / 6.)]
-        data['trial_%d_te_indices' % _] = perm[int(len(perm) * 5. / 6.):]
+        all_indices = np.random.permutation(data['n'])
+        data['trial_%d_all_indices' % _] = np.asarray(all_indices, dtype=np.int32)
+        assert data['n'] == len(data['trial_%d_all_indices' % _])
+        tr_indices = all_indices[:int(len(all_indices) * 4. / 6.)]
+        data['trial_%d_tr_indices' % _] = np.asarray(tr_indices, dtype=np.int32)
+        va_indices = all_indices[int(len(all_indices) * 4. / 6.):int(len(all_indices) * 5. / 6.)]
+        data['trial_%d_va_indices' % _] = np.asarray(va_indices, dtype=np.int32)
+        te_indices = all_indices[int(len(all_indices) * 5. / 6.):]
+        data['trial_%d_te_indices' % _] = np.asarray(te_indices, dtype=np.int32)
+        n_tr = len(data['trial_%d_tr_indices' % _])
+        n_va = len(data['trial_%d_va_indices' % _])
+        n_te = len(data['trial_%d_te_indices' % _])
+        assert data['n'] == (n_tr + n_va + n_te)
     pkl.dump(data, open(os.path.join(root_path, '02_news20b/processed_02_news20b.pkl'), 'wb'))
 
 
@@ -534,7 +542,7 @@ def data_process_06_pcmac(num_trials=10):
 
 
 def main():
-    data_process_03_realsim()
+    data_process_05_rcv1_binary()
 
 
 if __name__ == '__main__':
