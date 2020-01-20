@@ -1316,7 +1316,6 @@ void _algo_ftrl_proximal(Data *data,
         // 1. example x_i arrives and then we make prediction.
         int ind = data->tr_indices[tt]; // the index of the current training example.
         double weight;
-        memset(gt, 0, sizeof(double) * (data->p + 1));
         double xtw = 0.0, ni, pow_gt;
         // receive a training sample.
         const int *xt_inds = data->x_inds + data->x_poss[ind];
