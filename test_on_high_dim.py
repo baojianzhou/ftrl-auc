@@ -128,6 +128,7 @@ def cv_ftrl_fast(input_para):
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
     print(para_gamma, para_l1, metrics[1])
+    sys.stdout.flush()
     return trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, metrics
 
 
@@ -290,6 +291,7 @@ def cv_ftrl_proximal(input_para):
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
     print(para_gamma, para_l1, metrics[1])
+    sys.stdout.flush()
     return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
 
 
