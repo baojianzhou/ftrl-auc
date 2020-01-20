@@ -214,7 +214,9 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
     AlgoResults *re = make_algo_results(data->p + 1, data->n);
     _algo_ftrl_proximal(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
     PyObject *results = get_results(data->p + 1, re);
-    // free(paras), free_algo_results(re), free(data);
+    free_algo_results(re);
+    free(paras);
+    free(data);
     return results;
 }
 

@@ -1316,10 +1316,7 @@ void _algo_ftrl_proximal(Data *data,
     double *gt = calloc(data->p + 1, sizeof(double));
     double *zt = calloc(data->p + 1, sizeof(double));
     double *gt_square = calloc(data->p + 1, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n));
-    double exe_time = 0.0;
-    printf("test6\n");
-    printf("n: %d p: %d\n", data->n, data->p);
+    double total_time, run_time, eval_time = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
         int ind = data->indices[tt]; // the index of the current training example.
@@ -1355,28 +1352,38 @@ void _algo_ftrl_proximal(Data *data,
         pow_gt = pow(gt[data->p], 2.);
         zt[data->p] += gt[data->p] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
         gt_square[data->p] += pow_gt;
-        double t_eval = clock();
-        if (tt % 10000 == 0 && paras->record_aucs == 1) {
-            for (int jj = 0; jj < data->n_va; jj++) {
-                int cur_index = data->va_indices[jj];
-                true_labels[jj] = data->y[cur_index];
-                xtw = 0.0;
-                for (int kk = 0; kk < data->x_lens[cur_index]; kk++) {
-                    xt_inds = data->x_inds + data->x_poss[cur_index];
-                    xt_vals = data->x_vals + data->x_poss[cur_index];
-                    xtw += (re->wt[xt_inds[kk]] * xt_vals[kk]);
-                }
-                re->scores[jj] = xtw;
+        if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
+            double start_eval = clock();
+            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            double end_eval = clock();
+            // this may not be very accurate.
+            eval_time += end_eval - start_eval;
+            run_time = (end_eval - start_time) - eval_time;
+            re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+            if (paras->verbose > 0) {
+                printf("tt: %d auc: %.4f n_va:%d\n",
+                       tt, re->aucs[re->auc_len - 1], data->n_va);
             }
-            re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, data->n_va);
-            re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
         }
-        exe_time += (clock() - t_eval);
     }
-    printf("run time: %.4f\n", (((double) clock() - start_time) - exe_time) / CLOCKS_PER_SEC);
-    printf("eval time: %.4f\n", exe_time / CLOCKS_PER_SEC);
-    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
-    free(true_labels);
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    cal_sparse_ratio(re, data->p);
+    re->va_auc = eval_auc(data, re, true);
+    re->te_auc = eval_auc(data, re, false);
+    printf("\n-------------------------------------------------------\n");
+    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+           data->p, data->n_tr, data->n_va, data->n_te);
+    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+           run_time, eval_time, total_time);
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+    printf("para_l1: %.4f para_gamma: %.4f sparse_ratio: %.4f\n",
+           para_l1, para_gamma, re->sparse_ratio);
+    printf("\n-------------------------------------------------------\n");
     free(gt);
     free(zt);
     free(gt_square);
