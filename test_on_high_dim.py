@@ -384,6 +384,7 @@ def run_high_dimensional(method, dataset, num_cpus):
     elif method == 'fsauc':
         ms_res = pool.map(cv_fsauc, para_space)
     elif method == 'solam':
+        cv_solam(para_space[0])
         ms_res = pool.map(cv_solam, para_space)
     else:
         ms_res = None
