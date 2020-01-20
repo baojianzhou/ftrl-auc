@@ -687,7 +687,7 @@ void _algo_spam(Data *data,
         // evaluate the AUC score
         if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            re->aucs[re->auc_len] = eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -826,7 +826,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
             // to calculate AUC score
             if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = eval_auc(data, re, true);
+                re->aucs[re->auc_len] = eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
@@ -1261,7 +1261,7 @@ void _algo_ftrl_auc_fast(Data *data,
         }
         if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            re->aucs[re->auc_len] = eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -1349,7 +1349,7 @@ void _algo_ftrl_proximal(Data *data,
         gt_square[data->p] += pow_gt;
         if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            re->aucs[re->auc_len] = eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;

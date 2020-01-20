@@ -13,6 +13,7 @@ from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam_whole
 from data_preprocess import data_process_01_webspam_small
 from data_preprocess import data_process_07_url
+
 try:
     sys.path.append(os.getcwd())
     import sparse_module
@@ -381,7 +382,7 @@ def run_high_dimensional(method, dataset, num_cpus):
     pkl.dump(ms_res, open(f_name, 'wb'))
 
 
-def result_analysis():
+def result_statistics():
     aucs = []
     for method in ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']:
         results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
@@ -417,6 +418,29 @@ def result_analysis():
     print(' & '.join(sparse_ratios))
 
 
+def result_curves():
+    import matplotlib.pyplot as plt
+    label_method = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'FSAUC', 'SOLAM']
+    fig, ax = plt.subplots(1, 2)
+    for ind, method in enumerate(['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']):
+        results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
+        rts_matrix, aucs_matrix = None, None
+        for item in results:
+            rts = item[-2]
+            aucs = item[-3]
+            if rts_matrix is None:
+                rts_matrix = np.zeros_like(rts)
+                aucs_matrix = np.zeros_like(aucs)
+            rts_matrix += rts
+            aucs_matrix += aucs
+        rts_matrix /= float(len(results))
+        aucs_matrix /= float(len(results))
+        ax[0].plot(rts_matrix, aucs_matrix, label=label_method[ind])
+        ax[1].plot(aucs_matrix[:100], label=label_method[ind])
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     # 05_rcv1_bin
     if sys.argv[1] == 'run':
@@ -424,4 +448,6 @@ if __name__ == '__main__':
                              dataset=sys.argv[3],
                              num_cpus=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
-        result_analysis()
+        result_statistics()
+    elif sys.argv[1] == 'show_curves':
+        result_curves()
