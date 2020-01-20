@@ -559,7 +559,7 @@ def data_process_06_pcmac(num_trials=10):
 
 
 def data_process_07_url(num_trials=10):
-    np.random.seed(int(time.time()))
+    np.random.seed(17)
     data = {'file_path': root_path + '07_url/raw_url',
             'data_name': '07_url',
             'x_tr_vals': [],
@@ -609,6 +609,7 @@ def data_process_07_url(num_trials=10):
     print('k: %d' % data['k'])
     for _ in range(num_trials):
         all_indices = np.random.permutation(data['n'])
+        print(all_indices[:5])
         data['trial_%d_all_indices' % _] = np.asarray(all_indices, dtype=np.int32)
         assert data['n'] == len(data['trial_%d_all_indices' % _])
         tr_indices = all_indices[:int(len(all_indices) * 4. / 6.)]
@@ -621,11 +622,12 @@ def data_process_07_url(num_trials=10):
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
         assert data['n'] == (n_tr + n_va + n_te)
-    pkl.dump(data, open(os.path.join(root_path, '07_url/processed_07_url.pkl'), 'wb'))
+    sys.stdout.flush()
+    return data
 
 
 def main():
-    data_process_05_rcv1_binary()
+    data_process_07_url()
 
 
 if __name__ == '__main__':

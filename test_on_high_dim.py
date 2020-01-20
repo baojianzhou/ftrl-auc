@@ -12,7 +12,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam_whole
 from data_preprocess import data_process_01_webspam_small
-
+from data_preprocess import data_process_07_url
 try:
     sys.path.append(os.getcwd())
     import sparse_module
@@ -348,6 +348,8 @@ def run_high_dimensional(method, dataset, num_cpus):
     if dataset == '01_webspam':
         f_name = root_path + '%s/webspam_wc_normalized_trigram.svm' % dataset
         data = data_process_01_webspam_whole()
+    elif dataset == '07_url':
+        data = data_process_07_url()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
