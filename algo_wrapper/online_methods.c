@@ -495,7 +495,7 @@ bool _algo_solam(
     double *v, *v_prev;
     double *v_bar, *v_bar_prev;
     double alpha, alpha_prev;
-    double *y_pred, *grad_v;
+    double *grad_v;
     double is_p_yt, is_n_yt;
     double vt_dot, wei_posi, wei_nega;
     double weight, grad_alpha, norm_v;
@@ -510,7 +510,6 @@ bool _algo_solam(
     grad_v = malloc(sizeof(double) * (data->p + 2));
     v_bar = malloc(sizeof(double) * (data->p + 2));
     v_bar_prev = calloc((data->p + 2), sizeof(double));
-    y_pred = calloc((size_t) data->n, sizeof(double));
     for (int tt = 0; tt < data->n_tr; tt++) {
         // example x_i arrives and then we make prediction.
         // the index of the current training example.
@@ -592,7 +591,6 @@ bool _algo_solam(
     printf("para_xi: %.4f para_r: %.4f sparse_ratio: %.4f\n",
            para_xi, para_r, re->sparse_ratio);
     printf("\n-------------------------------------------------------\n");
-    free(y_pred);
     free(v_bar_prev);
     free(v_bar);
     free(grad_v);
@@ -1112,7 +1110,7 @@ void _algo_ftrl_auc(Data *data,
     double prob_p = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
-        int ind = data->indices[tt]; // the index of the current training example.
+        int ind = data->tr_indices[tt]; // the index of the current training example.
         bool is_posi_y = is_posi(data->y[ind]);
         prob_p = is_posi_y ? (tt * prob_p + 1.) / (tt + 1.) : (tt * prob_p) / (tt + 1.);
         if (data->is_sparse) {
@@ -1218,7 +1216,7 @@ void _algo_ftrl_auc_fast(Data *data,
     for (int tt = 0; tt < data->n_tr; tt++) {
         // example x_i arrives and then we make prediction.
         // the index of the current training example.
-        int ind = data->indices[tt];
+        int ind = data->tr_indices[tt];
         // receive a training sample.
         bool is_posi_y = is_posi(data->y[ind]);
         prob_p = (tt * prob_p + is_posi_y) / (tt + 1.);
@@ -1316,7 +1314,7 @@ void _algo_ftrl_proximal(Data *data,
     double total_time, run_time, eval_time = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
         // 1. example x_i arrives and then we make prediction.
-        int ind = data->indices[tt]; // the index of the current training example.
+        int ind = data->tr_indices[tt]; // the index of the current training example.
         double weight;
         memset(gt, 0, sizeof(double) * (data->p + 1));
         double xtw = 0.0, ni, pow_gt;

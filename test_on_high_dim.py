@@ -159,7 +159,7 @@ def cv_solam(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     for para_xi, para_r in product(np.arange(1, 101, 9, dtype=float), 10. ** np.arange(-1, 6, 1, dtype=float)):
-        verbose, eval_step, record_aucs = 0, data['n'], 0
+        verbose, eval_step, record_aucs = 1, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
         wt, aucs, rts, metrics = c_algo_solam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],

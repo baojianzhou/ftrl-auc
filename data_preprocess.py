@@ -462,7 +462,10 @@ def data_process_05_rcv1_binary(num_trials=10):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = len(feature_indices)
+    data['p'] = max_id - min_id
+    if len(feature_indices) != (max_id - min_id):
+        print('some features are all zeros.')
+    assert data['p'] == (max_id - min_id)  # TODO be careful
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
     assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
     data['num_posi'] = len([_ for _ in data['y_tr'] if _ > 0])
