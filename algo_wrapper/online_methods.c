@@ -615,7 +615,6 @@ void _algo_spam(Data *data,
     double *nega_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=-1]
     double *y_pred = calloc((size_t) data->n, sizeof(double));
     double a_wt = 0.0, b_wt = 0.0;
-    double alpha_wt;
     double posi_t = 0.0, nega_t = 0.0;
     double prob_p = 0.0;
     double eta_t;
@@ -625,7 +624,7 @@ void _algo_spam(Data *data,
         eta_t = para_xi / sqrt(tt + 1.0); // current learning rate
         const int *xt_inds;
         const double *xt_vals;
-        double xtw = 0.0, weight;
+        double xtw = 0.0;
         // receive zt=(xt,yt)
         xt_inds = data->x_inds + data->x_poss[ind];
         xt_vals = data->x_vals + data->x_poss[ind];
@@ -1214,7 +1213,6 @@ void _algo_ftrl_auc_fast(Data *data,
     double *gt = calloc(data->p, sizeof(double));
     double *zt = calloc(data->p, sizeof(double));
     double *gt_square = calloc(data->p, sizeof(double));
-    double *true_labels = calloc(data->n, sizeof(double));
     double prob_p = 0.0;
     double total_time, run_time, eval_time = 0.0;
     for (int tt = 0; tt < data->n_tr; tt++) {
@@ -1297,7 +1295,6 @@ void _algo_ftrl_auc_fast(Data *data,
     printf("\n-------------------------------------------------------\n");
     free(x_nega);
     free(x_posi);
-    free(true_labels);
     free(gt);
     free(zt);
     free(gt_square);

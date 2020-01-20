@@ -152,17 +152,17 @@ def data_process_01_webspam_small():
     pkl.dump(data, open(data_path + '01_webspam_10000.pkl', 'wb'))
 
 
-def data_process_01_webspam_whole():
-    start_time = time.time()
-    data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
-    data = dict()
-    data['x_tr_vals'] = []
-    data['x_tr_inds'] = []
-    data['x_tr_poss'] = []
-    data['x_tr_lens'] = []
-    data['y_tr'] = []
+def data_process_01_webspam_whole(num_trials=10):
+    np.random.seed(int(time.time()))
+    data = {'file_path': '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/',
+            'data_name': '01_webspam',
+            'x_tr_vals': [],
+            'x_tr_inds': [],
+            'x_tr_poss': [],
+            'x_tr_lens': [],
+            'y_tr': []}
     prev_posi, feature_index, features = 0, 0, dict()
-    with open(data_path + 'webspam_wc_normalized_trigram.svm') as f:
+    with open(data['file_path'] + 'webspam_wc_normalized_trigram.svm') as f:
         for ind, each_line in enumerate(f.readlines()):
             items = str(each_line).lstrip().rstrip().split(' ')
             cur_values = [float(_.split(':')[1]) for _ in items[1:]]
@@ -188,16 +188,29 @@ def data_process_01_webspam_whole():
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
     data['p'] = len(features.keys())
+    data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
     assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
     print('number of positive: %d' % len([_ for _ in data['y_tr'] if _ > 0]))
     print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
     data['num_posi'] = len([_ for _ in data['y_tr'] if _ > 0])
     data['num_nega'] = len([_ for _ in data['y_tr'] if _ < 0])
+    data['posi_ratio'] = float(data['num_posi']) / float(data['num_nega'])
     data['num_nonzeros'] = len(data['x_tr_vals'])
-    data['name'] = '01_webspam'
-    data['tr_indices'] = np.arange(280000)
-    data['te_indices'] = np.arange(280000, 350000)
-    print('total run_time: %.2f' % (time.time() - start_time))
+    for _ in range(num_trials):
+        all_indices = np.random.permutation(data['n'])
+        data['trial_%d_all_indices' % _] = np.asarray(all_indices, dtype=np.int32)
+        assert data['n'] == len(data['trial_%d_all_indices' % _])
+        tr_indices = all_indices[:int(len(all_indices) * 4. / 6.)]
+        data['trial_%d_tr_indices' % _] = np.asarray(tr_indices, dtype=np.int32)
+        va_indices = all_indices[int(len(all_indices) * 4. / 6.):int(len(all_indices) * 5. / 6.)]
+        data['trial_%d_va_indices' % _] = np.asarray(va_indices, dtype=np.int32)
+        te_indices = all_indices[int(len(all_indices) * 5. / 6.):]
+        data['trial_%d_te_indices' % _] = np.asarray(te_indices, dtype=np.int32)
+        n_tr = len(data['trial_%d_tr_indices' % _])
+        n_va = len(data['trial_%d_va_indices' % _])
+        n_te = len(data['trial_%d_te_indices' % _])
+        assert data['n'] == (n_tr + n_va + n_te)
+    return data
 
 
 def data_process_02_news20b(num_trials=10):

@@ -345,8 +345,12 @@ def cv_adagrad(input_para):
 
 
 def run_high_dimensional(method, dataset, num_cpus):
-    f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
-    data = pkl.load(open(f_name))
+    if dataset == '01_webspam':
+        f_name = root_path + '%s/webspam_wc_normalized_trigram.svm' % dataset
+        data = data_process_01_webspam_whole()
+    else:
+        f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
+        data = pkl.load(open(f_name))
     para_space = [(data, trial_i) for trial_i in range(10)]
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_fast':
@@ -412,6 +416,7 @@ def result_analysis():
 
 
 if __name__ == '__main__':
+    # 05_rcv1_bin
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
                              dataset=sys.argv[3],
