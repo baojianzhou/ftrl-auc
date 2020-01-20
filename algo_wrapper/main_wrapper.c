@@ -129,17 +129,19 @@ static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
 
 static PyObject *wrap_algo_fsauc(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
-    PyArrayObject *x_tr_vals, *x_tr_inds, *x_tr_poss, *x_tr_lens, *data_y_tr, *data_perm, *global_paras;
+    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
+    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_r, para_g;
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!iiO!dd",
-                          &PyArray_Type, &x_tr_vals, &PyArray_Type, &x_tr_inds, &PyArray_Type, &x_tr_poss,
-                          &PyArray_Type, &x_tr_lens, &PyArray_Type, &data_y_tr, &PyArray_Type, &data_perm,
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dd",
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
+                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
+                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
                           &data->is_sparse, &data->p, &PyArray_Type, &global_paras, &para_r, &para_g)) { return NULL; }
     init_global_paras(paras, global_paras);
-    //init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p, data->n_tr);
+    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
+    AlgoResults *re = make_algo_results(data->p, data->n);
     _algo_fsauc(data, paras, re, para_r, para_g);
     PyObject *results = get_results(data->p, re);
     free(paras), free_algo_results(re), free(data);

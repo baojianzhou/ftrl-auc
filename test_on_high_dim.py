@@ -19,6 +19,7 @@ try:
 
     try:
         from sparse_module import c_algo_solam
+        from sparse_module import c_algo_fsauc
         from sparse_module import c_algo_ftrl_auc
         from sparse_module import c_algo_ftrl_auc_fast
         from sparse_module import c_algo_ftrl_proximal
@@ -298,21 +299,21 @@ def cv_ftrl_fast(input_para):
     data, trial_i = input_para
     best_auc, para = None, None
     cv_res = dict()
-    for para_gamma in [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
-                       1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]:
-        for para_l1 in [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
-                        1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]:
-            para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
-            global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-            wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
-                data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
-                data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
-                data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-                1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-            cv_res[(trial_i, para_gamma, para_l1)] = metrics
-            va_auc = metrics[0]
-            if best_auc is None or best_auc < va_auc:
-                best_auc, para = va_auc, (para_gamma, para_l1, para_l2, para_beta)
+    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
+                                        1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
+                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3,
+                                        1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
+        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+        cv_res[(trial_i, para_gamma, para_l1)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_gamma, para_l1, para_l2, para_beta)
     para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_gamma, para_l1, para_l2, para_beta = para
@@ -324,15 +325,62 @@ def cv_ftrl_fast(input_para):
     return trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics
 
 
-def test_on_03_real_sim():
+def cv_fsauc(input_para):
+    data, trial_i = input_para
+    best_auc, para = None, None
+    cv_res = dict()
+    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float),
+                                  2. ** np.arange(-10, 11, 1, dtype=float)):
+        verbose, eval_step, record_aucs = 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_fsauc(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_r, para_g)
+        cv_res[(trial_i, para_r, para_g)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_r, para_g)
+    para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_r, para_g = para
+    wt, aucs, rts, metrics = c_algo_fsauc(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_r, para_g)
+    return trial_i, para_r, para_g, cv_res, wt, aucs, rts, metrics
+
+
+def test_on_03_real_sim(method):
     data = pkl.load(open(root_path + '03_real_sim/processed_03_real_sim.pkl'))
     para_space = [(data, trial_i) for trial_i in range(10)]
     pool = multiprocessing.Pool(processes=27)
-    ms_res = pool.map(cv_ftrl_fast, para_space)
+    if method == 'ftrl_fast':
+        ms_res = pool.map(cv_ftrl_fast, para_space)
+    elif method == 'fsauc':
+        ms_res = pool.map(cv_fsauc, para_space)
+    else:
+        ms_res = None
     pool.close()
     pool.join()
     pkl.dump(ms_res, open(root_path + '03_real_sim/re_03_real_sim.pkl', 'wb'))
 
 
+def result_analysis():
+    results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim.pkl'))
+    te_auc, sparse_ratio = [], []
+    for trial_i, para_gamma, para_l1, cv_res, wt, aucs, rts, metrics in results:
+        print(trial_i, metrics[1])
+        te_auc.append(metrics[1])
+        sparse_ratio.append(metrics[3])
+    print(np.mean(np.asarray(te_auc)), np.std(np.asarray(te_auc)))
+    print(np.mean(np.asarray(sparse_ratio)), np.std(np.asarray(sparse_ratio)))
+
+
 if __name__ == '__main__':
-    test_on_03_real_sim()
+    if sys.argv[1] == 'run_method':
+        test_on_03_real_sim(method=sys.argv[2])
+    elif sys.argv[1] == 'show_auc':
+        result_analysis()
