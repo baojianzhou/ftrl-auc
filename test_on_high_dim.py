@@ -348,11 +348,11 @@ def cv_fsauc(input_para):
     return trial_i, para_r, para_g, cv_res, wt, aucs, rts, metrics
 
 
-def run_high_dimensional(method, dataset):
+def run_high_dimensional(method, dataset, num_cpus):
     f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
     data = pkl.load(open(f_name))
     para_space = [(data, trial_i) for trial_i in range(10)]
-    pool = multiprocessing.Pool(processes=10)
+    pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_fast':
         ms_res = pool.map(cv_ftrl_fast, para_space)
     elif method == 'fsauc':
@@ -378,6 +378,8 @@ def result_analysis():
 
 if __name__ == '__main__':
     if sys.argv[1] == 'run':
-        run_high_dimensional(method=sys.argv[2], dataset=sys.argv[3])
+        run_high_dimensional(method=sys.argv[2],
+                             dataset=sys.argv[3],
+                             num_cpus=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
         result_analysis()
