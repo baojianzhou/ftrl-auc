@@ -18,6 +18,7 @@ try:
     import sparse_module
 
     try:
+        from sparse_module import c_algo_spam
         from sparse_module import c_algo_solam
         from sparse_module import c_algo_fsauc
         from sparse_module import c_algo_ftrl_auc
@@ -374,6 +375,86 @@ def cv_solam(input_para):
     return trial_i, para_xi, para_r, cv_res, wt, aucs, rts, metrics
 
 
+def cv_spam_l1(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_xi, para_l1 in product(10. ** np.arange(-5, 4, 1, dtype=float),
+                                    10. ** np.arange(-5, 4, 1, dtype=float)):
+        verbose, eval_step, record_aucs = 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_spam(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_xi, para_l1, 0.0)
+        cv_res[(trial_i, para_xi, para_l1)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_xi, para_l1)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_xi, para_l1 = para
+    wt, aucs, rts, metrics = c_algo_spam(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_xi, para_l1, 0.0)
+    return trial_i, para_xi, para_l1, cv_res, wt, aucs, rts, metrics
+
+
+def cv_spam_l2(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_xi, para_l2 in product(10. ** np.arange(-5, 4, 1, dtype=float),
+                                    10. ** np.arange(-5, 4, 1, dtype=float)):
+        verbose, eval_step, record_aucs = 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_solam(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_xi, 0.0, para_l2)
+        cv_res[(trial_i, para_xi, para_l2)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_xi, para_l2)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_xi, para_l2 = para
+    wt, aucs, rts, metrics = c_algo_solam(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_xi, 0.0, para_l2)
+    return trial_i, para_xi, para_l2, cv_res, wt, aucs, rts, metrics
+
+
+def cv_spam_l1l2(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_xi, para_r in product(np.arange(1, 101, 9, dtype=float), 10. ** np.arange(-1, 6, 1, dtype=float)):
+        verbose, eval_step, record_aucs = 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_solam(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            1, data['p'], global_paras, para_xi, para_r)
+        cv_res[(trial_i, para_xi, para_r)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_xi, para_r)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_xi, para_r = para
+    wt, aucs, rts, metrics = c_algo_solam(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_xi, para_r)
+    return trial_i, para_xi, para_r, cv_res, wt, aucs, rts, metrics
+
+
 def run_high_dimensional(method, dataset, num_cpus):
     f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
     data = pkl.load(open(f_name))
@@ -384,8 +465,13 @@ def run_high_dimensional(method, dataset, num_cpus):
     elif method == 'fsauc':
         ms_res = pool.map(cv_fsauc, para_space)
     elif method == 'solam':
-        cv_solam(para_space[0])
         ms_res = pool.map(cv_solam, para_space)
+    elif method == 'spam_l1':
+        ms_res = pool.map(cv_spam_l1, para_space)
+    elif method == 'spam_l2':
+        ms_res = pool.map(cv_spam_l2, para_space)
+    elif method == 'spam_l1l2':
+        ms_res = pool.map(cv_spam_l1l2, para_space)
     else:
         ms_res = None
     pool.close()

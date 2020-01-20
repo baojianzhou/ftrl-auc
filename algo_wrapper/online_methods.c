@@ -476,6 +476,7 @@ void cal_sparse_ratio(AlgoResults *re, int d) {
     re->sparse_ratio = (double) re->nonzero_wt / (double) d;
 }
 
+
 bool _algo_solam(
         Data *data,
         GlobalParas *paras,
@@ -600,8 +601,12 @@ bool _algo_solam(
     return true;
 }
 
-void _algo_spam(Data *data, GlobalParas *paras, AlgoResults *re,
-                double para_xi, double para_l1_reg, double para_l2_reg) {
+void _algo_spam(Data *data,
+                GlobalParas *paras,
+                AlgoResults *re,
+                double para_xi,
+                double para_l1,
+                double para_l2) {
 
     double start_time = clock();
     openblas_set_num_threads(1);
@@ -609,64 +614,112 @@ void _algo_spam(Data *data, GlobalParas *paras, AlgoResults *re,
     double *posi_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=1]
     double *nega_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=-1]
     double *y_pred = calloc((size_t) data->n, sizeof(double));
-    double a_wt, b_wt;
+    double a_wt = 0.0, b_wt = 0.0;
     double alpha_wt;
     double posi_t = 0.0, nega_t = 0.0;
-    double prob_p;
+    double prob_p = 0.0;
     double eta_t;
-    _get_posi_nega_x(posi_x, nega_x, &posi_t, &nega_t, &prob_p, data);
-
-    for (int t = 1; t <= data->n_tr; t++) {
-        eta_t = para_xi / sqrt(t); // current learning rate
-        a_wt = cblas_ddot(data->p, re->wt, 1, posi_x, 1); // update a(wt)
-        b_wt = cblas_ddot(data->p, re->wt, 1, nega_x, 1); // para_b(wt)
-        alpha_wt = b_wt - a_wt; // alpha(wt)
-        const double *xt;
+    double total_time, run_time, eval_time = 0.0;
+    for (int tt = 0; tt < data->n_tr; tt++) {
+        int ind = data->tr_indices[tt];
+        eta_t = para_xi / sqrt(tt + 1.0); // current learning rate
         const int *xt_inds;
         const double *xt_vals;
         double xtw = 0.0, weight;
-        if (data->is_sparse) {
-            // receive zt=(xt,yt)
-            xt_inds = data->x_inds + data->x_poss[(t - 1) % data->n_tr];
-            xt_vals = data->x_vals + data->x_poss[(t - 1) % data->n_tr];
-            for (int tt = 0; tt < data->x_lens[(t - 1) % data->n_tr]; tt++) {
-                xtw += (re->wt[xt_inds[tt]] * xt_vals[tt]);
+        // receive zt=(xt,yt)
+        xt_inds = data->x_inds + data->x_poss[ind];
+        xt_vals = data->x_vals + data->x_poss[ind];
+        if (data->y[ind] > 0) {
+            posi_t++;
+            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+                posi_x[xt_inds[ii]] += xt_vals[ii];
             }
-            weight = data->y[(t - 1) % data->n_tr] > 0 ?
-                     2. * (1.0 - prob_p) * (xtw - a_wt) -
-                     2. * (1.0 + alpha_wt) * (1.0 - prob_p) :
-                     2.0 * prob_p * (xtw - b_wt) + 2.0 * (1.0 + alpha_wt) * prob_p;
-            // gradient descent
-            for (int kk = 0; kk < data->x_lens[(t - 1) % data->n_tr]; kk++) {
-                re->wt[xt_inds[kk]] += -eta_t * weight * xt_vals[kk];
-            }
+            prob_p = (tt * prob_p + 1.) / (tt + 1.0);
+            // update a(wt)
+            a_wt = cblas_ddot(data->p, re->wt, 1, posi_x, 1) / posi_t;
         } else {
-            xt = data->x_vals + ((t - 1) % data->n_tr) * data->p;
-            xtw = cblas_ddot(data->p, re->wt, 1, xt, 1);
-            weight = data->y[(t - 1) % data->n_tr] > 0 ?
-                     2. * (1.0 - prob_p) * (xtw - a_wt) -
-                     2. * (1.0 + alpha_wt) * (1.0 - prob_p) :
-                     2.0 * prob_p * (xtw - b_wt) + 2.0 * (1.0 + alpha_wt) * prob_p;
-            // gradient descent
-            cblas_daxpy(data->p, -eta_t * weight, xt, 1, re->wt, 1);
+            nega_t++;
+            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+                nega_x[xt_inds[ii]] += xt_vals[ii];
+            }
+            prob_p = (tt * prob_p) / (tt + 1.0);
+            // update b(wt)
+            b_wt = cblas_ddot(data->p, re->wt, 1, nega_x, 1) / nega_t;
         }
-        if (para_l1_reg <= 0.0 && para_l2_reg > 0.0) {
+        double wei_x, wei_posi, wei_nega;
+        if (data->y[ind] > 0) {
+            wei_x = 2. * (1. - prob_p) * (xtw - 1. - b_wt);
+            wei_posi = 2. * (1. - prob_p) * a_wt;
+            wei_nega = 2. * (1. - prob_p) * (-xtw);
+        } else {
+            wei_x = 2. * (prob_p) * (xtw + 1. - a_wt);
+            wei_posi = 2. * (prob_p) * (-xtw);
+            wei_nega = 2. * (prob_p) * b_wt;
+        }
+        memset(grad_wt, 0, sizeof(double) * (data->p));
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            grad_wt[xt_inds[ii]] = wei_x * xt_vals[ii];
+        }
+        if (nega_t > 0) {
+            wei_nega /= nega_t;
+        } else {
+            wei_nega = 0.0;
+        }
+        if (posi_t > 0) {
+            wei_posi /= posi_t;
+        } else {
+            wei_posi = 0.0;
+        }
+        // gradient descent
+        cblas_daxpy(data->p, wei_nega, nega_x, 1, grad_wt, 1);
+        cblas_daxpy(data->p, wei_posi, posi_x, 1, grad_wt, 1);
+        cblas_daxpy(data->p, -eta_t, grad_wt, 1, re->wt, 1);
+        if (para_l1 <= 0.0 && para_l2 > 0.0) {
             // l2-regularization
-            cblas_dscal(data->p, 1. / (eta_t * para_l2_reg + 1.), re->wt, 1);
+            cblas_dscal(data->p, 1. / (eta_t * para_l2 + 1.), re->wt, 1);
         } else {
             // elastic-net
-            double tmp_demon = (eta_t * para_l2_reg + 1.);
-            for (int k = 0; k < data->p; k++) {
-                double tmp_sign = (double) sign(re->wt[k]) / tmp_demon;
-                re->wt[k] = tmp_sign * fmax(0.0, fabs(re->wt[k]) - eta_t * para_l1_reg);
+            double tmp_demon = (eta_t * para_l2 + 1.);
+            for (int ii = 0; ii < data->p; ii++) {
+                double tmp_sign = (double) sign(re->wt[ii]) / tmp_demon;
+                re->wt[ii] = tmp_sign * fmax(0.0, fabs(re->wt[ii]) - eta_t * para_l1);
             }
         }
         // evaluate the AUC score
-        if (paras->record_aucs == 1) {
-            _evaluate_aucs(data, y_pred, re, start_time);
+        if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
+            double start_eval = clock();
+            re->aucs[re->auc_len] = eval_auc(data, re, true);
+            double end_eval = clock();
+            // this may not be very accurate.
+            eval_time += end_eval - start_eval;
+            run_time = (end_eval - start_time) - eval_time;
+            re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+            if (paras->verbose > 0) {
+                printf("tt: %d auc: %.4f n_va:%d\n",
+                       tt, re->aucs[re->auc_len - 1], data->n_va);
+            }
         }
     }
-    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    cal_sparse_ratio(re, data->p);
+    re->va_auc = eval_auc(data, re, true);
+    re->te_auc = eval_auc(data, re, false);
+    printf("\n-------------------------------------------------------\n");
+    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+           data->p, data->n_tr, data->n_va, data->n_te);
+    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+           run_time, eval_time, total_time);
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+    printf("para_xi: %.4f para_l1: %.4f para_l2: %.4f sparse_ratio: %.4f\n",
+           para_xi, para_l1, para_l2, re->sparse_ratio);
+    printf("\n-------------------------------------------------------\n");
     free(y_pred);
     free(nega_x);
     free(posi_x);
@@ -705,7 +758,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     double *vd = malloc(sizeof(double) * (data->p + 2)), ad;
     double *tmp_proj = malloc(sizeof(double) * data->p), beta_new;
     double *y_pred = calloc((size_t) data->n_tr, sizeof(double));
-    int tt =0;
+    int tt = 0;
     double total_time, run_time, eval_time = 0.0;
     for (int k = 0; k < m; k++) {
         memset(v_sum, 0, sizeof(double) * (data->p + 2));
@@ -774,22 +827,18 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
             memcpy(v_ave, v_sum, sizeof(double) * (data->p + 2));
             cblas_dscal(data->p + 2, 1. / (kk + 1.), v_ave, 1);
             // to calculate AUC score
-            if (paras->record_aucs == 1) {
-                memcpy(re->wt, v_ave, sizeof(double) * (data->p));
-                if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
-                    double start_eval = clock();
-                    re->aucs[re->auc_len] = eval_auc(data, re, true);
-                    double end_eval = clock();
-                    // this may not be very accurate.
-                    eval_time += end_eval - start_eval;
-                    run_time = (end_eval - start_time) - eval_time;
-                    re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
-                    if (paras->verbose > 0) {
-                        printf("tt: %d auc: %.4f n_va:%d\n",
-                               tt, re->aucs[re->auc_len - 1], data->n_va);
-                    }
+            if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
+                double start_eval = clock();
+                re->aucs[re->auc_len] = eval_auc(data, re, true);
+                double end_eval = clock();
+                // this may not be very accurate.
+                eval_time += end_eval - start_eval;
+                run_time = (end_eval - start_time) - eval_time;
+                re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+                if (paras->verbose > 0) {
+                    printf("tt: %d auc: %.4f n_va:%d\n",
+                           tt, re->aucs[re->auc_len - 1], data->n_va);
                 }
-                _evaluate_aucs(data, y_pred, re, start_time);
             }
             tt++;
         }

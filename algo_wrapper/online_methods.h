@@ -139,16 +139,16 @@ bool _algo_solam(Data *data,
  * @param paras
  * @param re
  * @param para_xi
- * @param para_l1_reg
- * @param para_l2_reg
+ * @param para_l1
+ * @param para_l2
  * @author --- (Email: ---)
  */
 void _algo_spam(Data *data,
                 GlobalParas *paras,
                 AlgoResults *re,
                 double para_xi,
-                double para_l1_reg,
-                double para_l2_reg);
+                double para_l1,
+                double para_l2);
 
 /**
  * Stochastic Hard Thresholding for AUC maximization.
