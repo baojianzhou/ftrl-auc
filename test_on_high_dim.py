@@ -270,7 +270,6 @@ def cv_ftrl_proximal(input_para):
                                        [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
         para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-        # para_l1, &para_l2, &para_beta, &para_gamma
         wt, aucs, rts, metrics = c_algo_ftrl_proximal(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
