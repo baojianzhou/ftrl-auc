@@ -408,7 +408,6 @@ def result_statistics(dataset='05_rcv1_bin'):
     aucs = []
     list_methods = ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'ftrl_proximal']
-    list_methods = ['ftrl_fast', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -543,7 +542,7 @@ if __name__ == '__main__':
                              dataset=sys.argv[3],
                              task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
-        result_statistics(dataset='07_url')
+        result_statistics(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_huge':
         result_statistics_huge(dataset='07_url')
     elif sys.argv[1] == 'show_curves_huge':
