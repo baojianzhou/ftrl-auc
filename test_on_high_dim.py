@@ -508,6 +508,29 @@ def result_curves():
     plt.show()
 
 
+def result_sparsity(dataset='03_real_sim'):
+    import matplotlib.pyplot as plt
+    label_method = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'FSAUC', 'SOLAM']
+    fig, ax = plt.subplots(1, 2)
+    for ind, method in enumerate(['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']):
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        rts_matrix, aucs_matrix = None, None
+        for item in results:
+            rts = item[-2]
+            aucs = item[-3]
+            if rts_matrix is None:
+                rts_matrix = np.zeros_like(rts)
+                aucs_matrix = np.zeros_like(aucs)
+            rts_matrix += rts
+            aucs_matrix += aucs
+        rts_matrix /= float(len(results))
+        aucs_matrix /= float(len(results))
+        ax[0].plot(rts_matrix, aucs_matrix, label=label_method[ind])
+        ax[1].plot(aucs_matrix[:100], label=label_method[ind])
+    plt.legend()
+    plt.show()
+
+
 def result_curves_huge(dataset='07_url'):
     import matplotlib.pyplot as plt
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
@@ -545,6 +568,8 @@ if __name__ == '__main__':
                              task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
         result_statistics(dataset=sys.argv[2])
+    elif sys.argv[1] == 'show_sparsity':
+        result_sparsity(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_huge':
         result_statistics_huge(dataset='07_url')
     elif sys.argv[1] == 'show_curves_huge':

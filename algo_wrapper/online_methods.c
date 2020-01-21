@@ -824,12 +824,13 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
             memcpy(v_ave, v_sum, sizeof(double) * (data->p + 2));
             cblas_dscal(data->p + 2, 1. / (kk + 1.), v_ave, 1);
             // to calculate AUC score
-            if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
+            if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1)))
+                && paras->record_aucs == 1) {
                 double start_eval = clock();
                 re->aucs[re->auc_len] = eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
-                eval_time += (end_eval - start_eval);
+                eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
