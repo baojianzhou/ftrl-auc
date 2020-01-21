@@ -1361,14 +1361,10 @@ void _algo_ftrl_proximal(Data *data,
         pow_gt = pow(gt[data->p], 2.);
         zt[data->p] += gt[data->p] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
         gt_square[data->p] += pow_gt;
-        if (tt < 10) {
-            paras->eval_step = 1;
-        } else if (tt < 110) {
-            paras->eval_step = 5;
-        } else if (tt < 1110) {
-            paras->eval_step = 50;
-        } else if (tt < 11110) {
-            paras->eval_step = 500;
+        if (100 <= tt && tt < 1110) {
+            paras->eval_step = 20;
+        } else if (1110 <= tt && tt < 11110) {
+            paras->eval_step = 100;
         } else if (tt < 111110) {
             paras->eval_step = 5000;
         } else if (tt < 1111110) {

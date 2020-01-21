@@ -526,7 +526,6 @@ def result_curves_huge(dataset='07_url'):
         aucs_matrix /= float(num_trials)
         ax[0].plot(rts_matrix[:100], aucs_matrix[:100], label=label_method[ind])
         ax[1].plot(aucs_matrix[:100], label=label_method[ind])
-    ax[1].set_ylim([0.9, 1.0])
     plt.legend()
     plt.show()
 
