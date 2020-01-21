@@ -13,6 +13,7 @@ from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam_whole
 from data_preprocess import data_process_01_webspam_small
 from data_preprocess import data_process_07_url
+from data_preprocess import data_process_08_farmads
 
 try:
     sys.path.append(os.getcwd())
@@ -355,6 +356,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_01_webspam_whole()
     elif dataset == '07_url':
         data = data_process_07_url()
+    elif dataset == '08_farmads':
+        data = data_process_08_farmads()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
