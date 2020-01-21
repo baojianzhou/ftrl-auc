@@ -10,7 +10,7 @@ from itertools import product
 import numpy as np
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
-from data_preprocess import data_process_01_webspam_whole
+from data_preprocess import data_process_01_webspam
 from data_preprocess import data_process_01_webspam_small
 from data_preprocess import data_process_07_url
 from data_preprocess import data_process_08_farmads
@@ -70,7 +70,7 @@ def pred_auc(data, tr_index, sub_te_ind, wt):
 
 def cv_ftrl_01_webspam_whole():
     verbose, record_aucs = 0, 0
-    data = data_process_01_webspam_whole()
+    data = data_process_01_webspam()
     all_indices = np.arange(data['n'])
     x_tr_indices = all_indices[:280000]
     x_te_indices = all_indices[280000:]
@@ -352,8 +352,7 @@ def cv_adagrad(input_para):
 
 def run_high_dimensional(method, dataset, num_cpus):
     if dataset == '01_webspam':
-        f_name = root_path + '%s/webspam_wc_normalized_trigram.svm' % dataset
-        data = data_process_01_webspam_whole()
+        data = data_process_01_webspam()
     elif dataset == '07_url':
         data = data_process_07_url()
     elif dataset == '08_farmads':
@@ -392,6 +391,8 @@ def run_high_dimensional(method, dataset, num_cpus):
 def run_huge_dimensional(method, dataset, task_id):
     if dataset == '07_url':
         data = data_process_07_url()
+    elif dataset == '01_webspam':
+        data = data_process_01_webspam()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
@@ -409,8 +410,7 @@ def run_huge_dimensional(method, dataset, task_id):
 
 def result_statistics(dataset='05_rcv1_bin'):
     aucs = []
-    list_methods = ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']
-    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'ftrl_proximal']
+    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []

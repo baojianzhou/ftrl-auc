@@ -152,8 +152,8 @@ def data_process_01_webspam_small():
     pkl.dump(data, open(data_path + '01_webspam_10000.pkl', 'wb'))
 
 
-def data_process_01_webspam_whole(num_trials=10):
-    np.random.seed(int(time.time()))
+def data_process_01_webspam(num_trials=10):
+    np.random.seed(17)
     data = {'file_path': '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/',
             'data_name': '01_webspam',
             'x_tr_vals': [],
@@ -161,33 +161,39 @@ def data_process_01_webspam_whole(num_trials=10):
             'x_tr_poss': [],
             'x_tr_lens': [],
             'y_tr': []}
-    prev_posi, feature_index, features = 0, 0, dict()
-    with open(data['file_path'] + 'webspam_wc_normalized_trigram.svm') as f:
+    prev_posi, min_id, max_id, max_len, feature_indices = 0, np.inf, 0, 0, dict()
+    with open(data['file_path'] + 'raw_webspam') as f:
         for ind, each_line in enumerate(f.readlines()):
             items = str(each_line).lstrip().rstrip().split(' ')
             cur_values = [float(_.split(':')[1]) for _ in items[1:]]
-            cur_indices = [int(_.split(':')[0]) for _ in items[1:]]
+            cur_indices = [int(_.split(':')[0]) - 1 for _ in items[1:]]
             for item in cur_indices:
-                if item not in features:
-                    features[item] = feature_index
-                    feature_index += 1
+                if item not in feature_indices:
+                    feature_indices[item] = ''
             data['y_tr'].append(float(items[0]))
             data['x_tr_vals'].extend(cur_values)
-            data['x_tr_inds'].extend([features[_] for _ in cur_indices])
+            data['x_tr_inds'].extend(cur_indices)
             data['x_tr_poss'].append(prev_posi)
             data['x_tr_lens'].append(len(cur_indices))
             prev_posi += len(cur_indices)
-            if len(items) == 1:
-                print(each_line)
-    print(min(features.keys()), max(features.keys()))
-    print(min(features.values()), max(features.values()))
+            if len(cur_indices) != 0:
+                for feature in cur_indices:
+                    feature_indices[feature] = ''
+                min_id = min(min(cur_indices), min_id)
+                max_id = max(max(cur_indices), max_id)
+                max_len = max(len(cur_indices), max_len)
+            else:
+                print('warning for sample %d: all features are zeros!' % ind)
+        print(min_id, max_id, max_len)
     data['x_tr_vals'] = np.asarray(data['x_tr_vals'], dtype=float)
     data['x_tr_inds'] = np.asarray(data['x_tr_inds'], dtype=np.int32)
     data['x_tr_lens'] = np.asarray(data['x_tr_lens'], dtype=np.int32)
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = len(features.keys())
+    data['p'] = max_id - min_id + 1
+    if len(feature_indices.keys()) != data['p']:
+        print('some features are all zeros.')
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
     assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
     print('number of positive: %d' % len([_ for _ in data['y_tr'] if _ > 0]))
