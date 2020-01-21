@@ -408,6 +408,7 @@ def result_statistics(dataset='05_rcv1_bin'):
     aucs = []
     list_methods = ['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'ftrl_proximal']
+    list_methods = ['ftrl_fast', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -442,6 +443,46 @@ def result_statistics(dataset='05_rcv1_bin'):
     print(' & '.join(sparse_ratios))
 
 
+def result_statistics_huge(dataset='07_url'):
+    aucs = []
+    list_methods = ['ftrl_fast', 'ftrl_proximal']
+    for method in list_methods:
+        te_auc = []
+        for _ in range(10):
+            item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl'
+                                 % (dataset, dataset, method, _)))
+            metrics = item[-1]
+            te_auc.append(metrics[1])
+        a = ("%0.5f" % float(np.mean(np.asarray(te_auc)))).lstrip('0')
+        b = ("%0.5f" % float(np.std(np.asarray(te_auc)))).lstrip('0')
+        aucs.append('$\pm$'.join([a, b]))
+    print(' & '.join(aucs))
+    run_times = []
+    for method in list_methods:
+        run_time = []
+        for _ in range(10):
+            item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl'
+                                 % (dataset, dataset, method, _)))
+            metrics = item[-1]
+            run_time.append(metrics[5])
+        a = ("%0.3f" % float(np.mean(np.asarray(run_time))))
+        b = ("%0.3f" % float(np.std(np.asarray(run_time))))
+        run_times.append('$\pm$'.join([a, b]))
+    print(' & '.join(run_times))
+    sparse_ratios = []
+    for method in list_methods:
+        sparse_ratio = []
+        for _ in range(10):
+            item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl'
+                                 % (dataset, dataset, method, _)))
+            metrics = item[-1]
+            sparse_ratio.append(metrics[3])
+        a = ("%0.4f" % float(np.mean(np.asarray(sparse_ratio)))).lstrip('0')
+        b = ("%0.4f" % float(np.std(np.asarray(sparse_ratio)))).lstrip('0')
+        sparse_ratios.append('$\pm$'.join([a, b]))
+    print(' & '.join(sparse_ratios))
+
+
 def result_curves():
     import matplotlib.pyplot as plt
     label_method = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'FSAUC', 'SOLAM']
@@ -465,6 +506,32 @@ def result_curves():
     plt.show()
 
 
+def result_curves_huge(dataset='07_url'):
+    import matplotlib.pyplot as plt
+    label_method = ['FTRL-AUC', 'FTRL-Proximal']
+    fig, ax = plt.subplots(1, 2)
+    num_trials = 10
+    for ind, method in enumerate(['ftrl_fast', 'ftrl_proximal']):
+        rts_matrix, aucs_matrix = None, None
+        for _ in range(num_trials):
+            item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl' %
+                                 (dataset, dataset, method, _)))
+            rts = item[-2]
+            aucs = item[-3]
+            if rts_matrix is None:
+                rts_matrix = np.zeros_like(rts)
+                aucs_matrix = np.zeros_like(aucs)
+            rts_matrix += rts
+            aucs_matrix += aucs
+        rts_matrix /= float(num_trials)
+        aucs_matrix /= float(num_trials)
+        ax[0].plot(rts_matrix[:100], aucs_matrix[:100], label=label_method[ind])
+        ax[1].plot(aucs_matrix[:100], label=label_method[ind])
+    ax[1].set_ylim([0.9, 1.0])
+    plt.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     # 05_rcv1_bin
     if sys.argv[1] == 'run':
@@ -476,6 +543,8 @@ if __name__ == '__main__':
                              dataset=sys.argv[3],
                              task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
-        result_statistics()
-    elif sys.argv[1] == 'show_curves':
-        result_curves()
+        result_statistics(dataset='07_url')
+    elif sys.argv[1] == 'show_auc_huge':
+        result_statistics_huge(dataset='07_url')
+    elif sys.argv[1] == 'show_curves_huge':
+        result_curves_huge()

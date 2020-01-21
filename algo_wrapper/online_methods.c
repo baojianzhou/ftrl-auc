@@ -1259,14 +1259,20 @@ void _algo_ftrl_auc_fast(Data *data,
             zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
             gt_square[xt_inds[ii]] += pow_gt;
         }
-        if (tt < 10000) {
-            paras->eval_step = 100;
-        } else if (tt < 100000) {
-            paras->eval_step = 1000;
-        } else if (tt < 1000000) {
-            paras->eval_step = 10000;
-        } else if (tt < 10000000) {
-            paras->eval_step = 100000;
+        if (tt < 10) {
+            paras->eval_step = 1;
+        } else if (tt < 110) {
+            paras->eval_step = 5;
+        } else if (tt < 1110) {
+            paras->eval_step = 50;
+        } else if (tt < 11110) {
+            paras->eval_step = 500;
+        } else if (tt < 111110) {
+            paras->eval_step = 5000;
+        } else if (tt < 1111110) {
+            paras->eval_step = 50000;
+        } else if (tt < 11111110) {
+            paras->eval_step = 500000;
         }
         if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) && paras->record_aucs == 1) {
             double start_eval = clock();
@@ -1355,14 +1361,20 @@ void _algo_ftrl_proximal(Data *data,
         pow_gt = pow(gt[data->p], 2.);
         zt[data->p] += gt[data->p] - (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
         gt_square[data->p] += pow_gt;
-        if (tt < 10000) {
-            paras->eval_step = 100;
-        } else if (tt < 100000) {
-            paras->eval_step = 1000;
-        } else if (tt < 1000000) {
-            paras->eval_step = 10000;
-        } else if (tt < 10000000) {
-            paras->eval_step = 100000;
+        if (tt < 10) {
+            paras->eval_step = 1;
+        } else if (tt < 110) {
+            paras->eval_step = 5;
+        } else if (tt < 1110) {
+            paras->eval_step = 50;
+        } else if (tt < 11110) {
+            paras->eval_step = 500;
+        } else if (tt < 111110) {
+            paras->eval_step = 5000;
+        } else if (tt < 1111110) {
+            paras->eval_step = 50000;
+        } else if (tt < 11111110) {
+            paras->eval_step = 500000;
         }
         if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) && paras->record_aucs == 1) {
             double start_eval = clock();
