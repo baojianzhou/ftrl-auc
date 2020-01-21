@@ -218,6 +218,7 @@ def data_process_01_webspam(num_trials=10):
         n_te = len(data['trial_%d_te_indices' % _])
         assert data['n'] == (n_tr + n_va + n_te)
     print(time.time() - start_time)
+    sys.stdout.flush()
     return data
 
 
