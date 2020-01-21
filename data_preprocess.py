@@ -154,6 +154,7 @@ def data_process_01_webspam_small():
 
 def data_process_01_webspam(num_trials=10):
     np.random.seed(17)
+    start_time = time.time()
     data = {'file_path': '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/',
             'data_name': '01_webspam',
             'x_tr_vals': [],
@@ -216,6 +217,7 @@ def data_process_01_webspam(num_trials=10):
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
         assert data['n'] == (n_tr + n_va + n_te)
+    print(time.time() - start_time)
     return data
 
 
@@ -709,7 +711,7 @@ def data_process_08_farmads(num_trials=10):
 
 
 def main():
-    data_process_08_farmads()
+    data_process_01_webspam()
 
 
 if __name__ == '__main__':
