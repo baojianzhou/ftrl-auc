@@ -364,7 +364,7 @@ def data_process_03_realsim(num_trials=10):
 
 def data_process_09_kdd2010(num_trials=1):
     # tr: 19,264,097 te: 748,401 p: 1,163,024
-    data = {'file_path': root_path + '09_kdd2010/raw_kddb/',
+    data = {'file_path': root_path + '09_kdd2010/raw_kddb',
             'data_name': '09_kdd2010',
             'x_tr_vals': [],
             'x_tr_inds': [],
