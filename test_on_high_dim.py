@@ -15,6 +15,7 @@ from data_preprocess import data_process_01_webspam_small
 from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_07_url
 from data_preprocess import data_process_08_farmads
+from data_preprocess import data_process_09_kdd2010
 
 try:
     sys.path.append(os.getcwd())
@@ -398,6 +399,8 @@ def run_huge_dimensional(method, dataset, task_id):
         data = data_process_01_webspam()
     elif dataset == '04_avazu':
         data = data_process_04_avazu()
+    elif dataset == '09_kdd2010':
+        data = data_process_09_kdd2010()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))

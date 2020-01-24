@@ -362,11 +362,10 @@ def data_process_03_realsim(num_trials=10):
     pkl.dump(data, open(os.path.join(root_path, '03_real_sim/processed_03_real_sim.pkl'), 'wb'))
 
 
-def data_process_04_avazu(num_trials=1):
-    # tr: 12,642,186
-    # va: 1,953,951
-    data = {'file_path': root_path + '04_avazu/raw_avazu',
-            'data_name': '04_avazu',
+def data_process_09_kdd2010(num_trials=1):
+    # tr: 19,264,097 te: 748,401 p: 1,163,024
+    data = {'file_path': root_path + '09_kdd2010/kddb-raw-libsvm',
+            'data_name': '09_kdd2010',
             'x_tr_vals': [],
             'x_tr_inds': [],
             'x_tr_poss': [],
@@ -405,7 +404,7 @@ def data_process_04_avazu(num_trials=1):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = 1000000
+    data['p'] = 1163024
     if data['p'] != (max_id - min_id + 1):
         print('number of nonzero features: %d' % len(feature_indices))
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
@@ -418,7 +417,7 @@ def data_process_04_avazu(num_trials=1):
     print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
     print('number of num_nonzeros: %d' % data['num_nonzeros'])
     print('k: %d' % data['k'])
-    fix_tr, fix_val = 12642186, 1953951
+    fix_tr, fix_val = 19264097, 748401
     for _ in range(num_trials):
         all_indices = np.arange(0, fix_tr + fix_val)
         print(all_indices[:5])
@@ -789,10 +788,11 @@ def data_process_08_farmads(num_trials=10):
     return data
 
 
-def data_process_10_gisette(num_trials=10):
-    np.random.seed(17)
-    data = {'file_path': root_path + '10_gisette/raw_gisette',
-            'data_name': '10_gisette',
+def data_process_04_avazu(num_trials=1):
+    # tr: 12,642,186
+    # va: 1,953,951
+    data = {'file_path': root_path + '04_avazu/raw_avazu',
+            'data_name': '04_avazu',
             'x_tr_vals': [],
             'x_tr_inds': [],
             'x_tr_poss': [],
@@ -803,7 +803,10 @@ def data_process_10_gisette(num_trials=10):
     with open(os.path.join(data['file_path']), 'rb') as f:
         for index, each_line in enumerate(f.readlines()):
             items = each_line.lstrip().rstrip().split(' ')
-            data['y_tr'].append(int(items[0]))
+            if int(items[0]) > 0:
+                data['y_tr'].append(+1)
+            else:
+                data['y_tr'].append(-1)
             cur_values = [float(_.split(':')[1]) for _ in items[1:]]
             cur_values = np.asarray(cur_values) / np.linalg.norm(cur_values)
             cur_values = list(cur_values)
@@ -828,10 +831,9 @@ def data_process_10_gisette(num_trials=10):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = (max_id - min_id + 1)
+    data['p'] = 1000000
     if data['p'] != (max_id - min_id + 1):
         print('number of nonzero features: %d' % len(feature_indices))
-        assert data['p'] == (max_id - min_id + 1)
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
     assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
     data['num_posi'] = len([_ for _ in data['y_tr'] if _ > 0])
@@ -842,28 +844,30 @@ def data_process_10_gisette(num_trials=10):
     print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
     print('number of num_nonzeros: %d' % data['num_nonzeros'])
     print('k: %d' % data['k'])
+    fix_tr, fix_val = 12642186, 1953951
     for _ in range(num_trials):
-        all_indices = np.random.permutation(data['n'])
+        all_indices = np.arange(0, fix_tr + fix_val)
         print(all_indices[:5])
         data['trial_%d_all_indices' % _] = np.asarray(all_indices, dtype=np.int32)
         assert data['n'] == len(data['trial_%d_all_indices' % _])
-        tr_indices = all_indices[:int(len(all_indices) * 4. / 6.)]
+        tr_indices = all_indices[:fix_tr]
         data['trial_%d_tr_indices' % _] = np.asarray(tr_indices, dtype=np.int32)
-        va_indices = all_indices[int(len(all_indices) * 4. / 6.):int(len(all_indices) * 5. / 6.)]
+        va_indices = all_indices[fix_tr:]
         data['trial_%d_va_indices' % _] = np.asarray(va_indices, dtype=np.int32)
-        te_indices = all_indices[int(len(all_indices) * 5. / 6.):]
+        te_indices = all_indices[fix_tr:]
         data['trial_%d_te_indices' % _] = np.asarray(te_indices, dtype=np.int32)
         n_tr = len(data['trial_%d_tr_indices' % _])
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
-        assert data['n'] == (n_tr + n_va + n_te)
+        print(n_tr)
+        print(n_va)
+        print(n_te)
     sys.stdout.flush()
-    pkl.dump(data, open(os.path.join(root_path, '10_gisette/processed_10_gisette.pkl'), 'wb'))
     return data
 
 
 def main():
-    data_process_10_gisette()
+    data_process_09_kdd2010()
 
 
 if __name__ == '__main__':
