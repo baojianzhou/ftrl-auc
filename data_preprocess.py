@@ -377,7 +377,10 @@ def data_process_04_avazu(num_trials=1):
     with open(os.path.join(data['file_path']), 'rb') as f:
         for index, each_line in enumerate(f.readlines()):
             items = each_line.lstrip().rstrip().split(' ')
-            data['y_tr'].append(int(items[0]))
+            if int(items[0]) > 0:
+                data['y_tr'].append(+1)
+            else:
+                data['y_tr'].append(-1)
             cur_values = [float(_.split(':')[1]) for _ in items[1:]]
             cur_values = np.asarray(cur_values) / np.linalg.norm(cur_values)
             cur_values = list(cur_values)
@@ -402,10 +405,9 @@ def data_process_04_avazu(num_trials=1):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = (max_id - min_id + 1)
+    data['p'] = 1000000
     if data['p'] != (max_id - min_id + 1):
         print('number of nonzero features: %d' % len(feature_indices))
-        assert data['p'] == (max_id - min_id + 1)
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
     assert len(np.unique(data['y_tr'])) == 2  # we have total 2 classes.
     data['num_posi'] = len([_ for _ in data['y_tr'] if _ > 0])
