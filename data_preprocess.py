@@ -433,7 +433,9 @@ def data_process_04_avazu(num_trials=1):
         n_tr = len(data['trial_%d_tr_indices' % _])
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
-        assert data['n'] == (n_tr + n_va + n_te)
+        print(n_tr)
+        print(n_va)
+        print(n_te)
     sys.stdout.flush()
     return data
 
