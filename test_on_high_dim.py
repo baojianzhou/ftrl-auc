@@ -12,6 +12,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam
 from data_preprocess import data_process_01_webspam_small
+from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_07_url
 from data_preprocess import data_process_08_farmads
 
@@ -357,6 +358,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
+    elif dataset == '10_gisette':
+        data = data_process_08_farmads()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
@@ -393,6 +396,8 @@ def run_huge_dimensional(method, dataset, task_id):
         data = data_process_07_url()
     elif dataset == '01_webspam':
         data = data_process_01_webspam()
+    elif dataset == '04_avazu':
+        data = data_process_04_avazu()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
