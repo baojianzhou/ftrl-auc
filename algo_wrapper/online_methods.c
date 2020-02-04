@@ -922,110 +922,6 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     free(v_1);
 }
 
-void _algo_ftrl_auc(Data *data,
-                    GlobalParas *paras,
-                    AlgoResults *re,
-                    double para_l1,
-                    double para_l2,
-                    double para_beta,
-                    double para_gamma) {
-    clock_t start_time = clock();
-    openblas_set_num_threads(1);
-    double *x_posi = calloc(data->p, sizeof(double));
-    double *x_nega = calloc(data->p, sizeof(double));
-    double t_posi = 0.0, t_nega = 0.0;
-    double *gt = malloc(sizeof(double) * (data->p));
-    double *zt = calloc(data->p, sizeof(double));
-    double *gt_square = calloc(data->p, sizeof(double));
-    double *true_labels = malloc(sizeof(double) * (data->n_tr + data->n_va + data->n_te));
-    double prob_p = 0.0;
-    for (int tt = 0; tt < data->n_tr; tt++) {
-        // 1. example x_i arrives and then we make prediction.
-        int ind = data->tr_indices[tt]; // the index of the current training example.
-        bool is_posi_y = is_posi(data->y[ind]);
-        prob_p = is_posi_y ? (tt * prob_p + 1.) / (tt + 1.) : (tt * prob_p) / (tt + 1.);
-        if (data->is_sparse) {
-            double xtw = 0.0, ni, pow_gt, wei_x, wei_posi, wei_nega, utw = 0.0, vtw = 0.0;
-            // receive a training sample.
-            const int *xt_inds = data->x_inds + data->x_poss[ind];
-            const double *xt_vals = data->x_vals + data->x_poss[ind];
-            // calculate the gradient
-            memset(gt, 0, sizeof(double) * (data->p));
-            if (is_posi_y) {
-                for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                    xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
-                    x_posi[xt_inds[ii]] += xt_vals[ii];
-                }
-                t_posi += 1.;
-                utw = cblas_ddot(data->p, re->wt, 1, x_posi, 1) / t_posi;
-                wei_x = 2. * (1. - prob_p) * (xtw - utw);
-                wei_nega = 2. * prob_p * (1. - prob_p) * (utw - vtw - 1.0);
-                wei_posi = -wei_nega - wei_x;
-            } else {
-                for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                    xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
-                    x_nega[xt_inds[ii]] += xt_vals[ii];
-                }
-                t_nega += 1.;
-                vtw = cblas_ddot(data->p, re->wt, 1, x_nega, 1) / t_nega;
-                wei_x = 2. * prob_p * (xtw - vtw);
-                wei_posi = 2. * prob_p * (1. - prob_p) * (utw - vtw - 1.0);
-                wei_nega = -wei_posi - wei_x;
-            }
-            for (int kk = 0; kk < data->x_lens[ind]; kk++) {
-                gt[xt_inds[kk]] += (wei_x * xt_vals[kk]);
-            }
-            if (t_posi > 0.0) {
-                cblas_daxpy(data->p, wei_posi / t_posi, x_posi, 1, gt, 1);
-            }
-            if (t_nega > 0.0) {
-                cblas_daxpy(data->p, wei_nega / t_nega, x_nega, 1, gt, 1);
-            }
-            // lazy update the model and make prediction.
-            for (int ii = 0; ii < data->p; ii++) {
-                ni = gt_square[ii];
-                re->wt[ii] = fabs(zt[ii]) <= para_l1 ? 0.0 : -(zt[ii] - sign(zt[ii]) * para_l1)
-                                                             / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
-            }
-            double lr;
-            for (int ii = 0; ii < data->p; ii++) {
-                ni = gt_square[ii];
-                pow_gt = pow(gt[ii], 2.);
-                lr = (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
-                zt[ii] += gt[ii] - lr * re->wt[ii];
-                gt_square[ii] += pow_gt;
-            }
-            if (paras->record_aucs == 1) {
-                if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
-                    double t_eval = clock();
-                    for (int jj = 0; jj < data->n_va; jj++) {
-                        int cur_index = data->va_indices[jj];
-                        true_labels[jj] = data->y[cur_index];
-                        xtw = 0.0;
-                        for (int kk = 0; kk < data->x_lens[cur_index]; kk++) {
-                            xt_inds = data->x_inds + data->x_poss[cur_index];
-                            xt_vals = data->x_vals + data->x_poss[cur_index];
-                            xtw += (re->wt[xt_inds[kk]] * xt_vals[kk]);
-                        }
-                        re->scores[jj] = xtw;
-                    }
-                    re->aucs[re->auc_len] = _auc_score(true_labels, re->scores, data->n_va);
-                    re->rts[re->auc_len++] = (double) clock() - start_time - (clock() - t_eval);
-                }
-            }
-        } else {
-
-        }
-    }
-    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
-    free(x_nega);
-    free(x_posi);
-    free(true_labels);
-    free(gt);
-    free(zt);
-    free(gt_square);
-}
-
 
 void _algo_ftrl_auc_fast(Data *data,
                          GlobalParas *paras,
@@ -1219,4 +1115,86 @@ void _algo_ftrl_proximal(Data *data,
     free(gt);
     free(zt);
     free(gt_square);
+}
+
+void _algo_rda_l1(Data *data,
+                  GlobalParas *paras,
+                  AlgoResults *re,
+                  double para_lambda,
+                  double para_gamma,
+                  double para_rho) {
+    clock_t start_time = clock();
+    openblas_set_num_threads(1);
+    double *gt = calloc(data->p + 1, sizeof(double));
+    double *gt_bar = calloc(data->p + 1, sizeof(double));
+    double total_time, run_time, eval_time = 0.0;
+    for (int tt = 0; tt < data->n_tr; tt++) {
+        // 1. example x_i arrives and then we make prediction.
+        int ind = data->tr_indices[tt]; // the index of the current training example.
+        double weight;
+        double xtw = 0.0;
+        // receive a training sample.
+        const int *xt_inds = data->x_inds + data->x_poss[ind];
+        const double *xt_vals = data->x_vals + data->x_poss[ind];
+        // make a prediction
+        double z0 = (data->y[ind]) * (xtw + re->wt[data->p]);
+        // calculate the gradient of w
+        weight = -(data->y[ind]) * expit(-z0);
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            gt[xt_inds[ii]] = weight * xt_vals[ii];
+        }
+        // calculate the gradient of intercept
+        gt[data->p] = weight;
+        // 3.   compute the dual average.
+        cblas_dscal(data->p + 1, tt / (tt + 1.), gt_bar, 1);
+        cblas_daxpy(data->p + 1, 1. / (tt + 1.), gt, 1, gt_bar, 1);
+
+        // 4.   update the model: enhanced l1-rda method. Equation (30)
+        double wei = -sqrt(tt + 1.) / para_gamma;
+        double lambda_t_rda = para_lambda + (para_gamma * para_rho) / sqrt(tt + 1.);
+        for (int i = 0; i < data->p; i++) {
+            if (fabs(gt_bar[i]) <= lambda_t_rda) {
+                re->wt[i] = 0.0; //thresholding entries
+            } else {
+                re->wt[i] = wei * (gt_bar[i] - lambda_t_rda * sign(gt_bar[i]));
+            }
+        }
+        // Notice: the bias term do not need to add regularization.
+        re->wt[data->p] = wei * gt_bar[data->p];
+        if (paras->record_aucs == 1) {
+            if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
+                double start_eval = clock();
+                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                double end_eval = clock();
+                // this may not be very accurate.
+                eval_time += end_eval - start_eval;
+                run_time = (end_eval - start_time) - eval_time;
+                re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+                if (paras->verbose > 0) {
+                    printf("tt: %d auc: %.4f n_va:%d\n",
+                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                }
+            }
+        }
+    }
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
+    printf("\n-------------------------------------------------------\n");
+    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+           data->p, data->n_tr, data->n_va, data->n_te);
+    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+           run_time, eval_time, total_time);
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+    printf("para_lambda: %.4f para_gamma: %.4f para_rho: %.4f sparse_ratio: %.4f\n",
+           para_lambda, para_gamma, para_rho, re->sparse_ratio);
+    printf("\n-------------------------------------------------------\n");
+    free(gt);
+    free(gt_bar);
 }

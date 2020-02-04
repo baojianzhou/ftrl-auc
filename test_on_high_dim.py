@@ -29,6 +29,8 @@ try:
         from sparse_module import c_algo_ftrl_auc
         from sparse_module import c_algo_ftrl_auc_fast
         from sparse_module import c_algo_ftrl_proximal
+        from sparse_module import c_algo_rda_l1
+        from sparse_module import c_algo_adagrad
     except ImportError:
         print('cannot find some function(s) in sparse_module')
         exit(0)
@@ -329,28 +331,32 @@ def cv_ftrl_proximal(input_para):
 def cv_rda_l1(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
-        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    # lambda: to control the sparsity
+    lambda_list = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]
+    # gamma: to control the learning rate. (it cannot be too small)
+    gamma_list = [1e3, 5e3, 1e4]
+    # rho: to control the sparsity-enhancing parameter.
+    rho_list = [0.0, 5e-3]
+    for para_lambda, para_gamma, para_rho in product(lambda_list, gamma_list, rho_list):
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_rda_l1(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-        cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)] = metrics
+            data['p'], global_paras, para_lambda, para_gamma, para_rho)
+        cv_res[(trial_i, para_lambda, para_gamma, para_rho)] = metrics
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_l1, para_l2, para_beta, para_gamma)
+            best_auc, para = va_auc, (para_lambda, para_gamma, para_rho)
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_l1, para_l2, para_beta, para_gamma = para
+    para_lambda, para_gamma, para_rho = para
     wt, aucs, rts, metrics = c_algo_rda_l1(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-    return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
+        1, data['p'], global_paras, para_lambda, para_gamma, para_rho, para_gamma)
+    return trial_i, (para_lambda, para_gamma, para_rho), cv_res, wt, aucs, rts, metrics
 
 
 def cv_adagrad(input_para):
