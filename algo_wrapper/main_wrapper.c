@@ -220,43 +220,6 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
     return results;
 }
 
-static PyObject *wrap_algo_graph_am(PyObject *self, PyObject *args) {
-    if (self != NULL) { printf("%zd", self->ob_refcnt); }
-    PyArrayObject *x_tr_vals, *x_tr_inds, *x_tr_poss, *x_tr_lens, *data_y_tr, *data_perm,
-            *graph_edges, *graph_weights, *global_paras;
-    Data *data = malloc(sizeof(Data));
-    GlobalParas *paras = malloc(sizeof(GlobalParas));
-    double para_xi, para_l2_reg;
-    int version, para_s, para_b;
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!iiO!O!O!iiiidd",
-                          &PyArray_Type, &x_tr_vals, &PyArray_Type, &x_tr_inds, &PyArray_Type, &x_tr_poss,
-                          &PyArray_Type, &x_tr_lens, &PyArray_Type, &data_y_tr, &PyArray_Type, &data_perm,
-                          &data->is_sparse, &data->p,
-                          &PyArray_Type, &global_paras, &PyArray_Type, &graph_edges, &PyArray_Type, &graph_weights,
-                          &data->g, &version, &para_s, &para_b, &para_xi, &para_l2_reg)) { return NULL; }
-    // graph info
-    data->is_graph = true;
-    data->m = (int) graph_weights->dimensions[0];
-    data->edges = malloc(sizeof(EdgePair) * data->m);
-    for (int i = 0; i < (int) graph_weights->dimensions[0]; i++) {
-        data->edges[i].first = *(int *) PyArray_GETPTR2(graph_edges, i, 0);
-        data->edges[i].second = *(int *) PyArray_GETPTR2(graph_edges, i, 1);
-    }
-    data->weights = (double *) PyArray_DATA(graph_weights);
-    data->proj_prizes = malloc(sizeof(double) * data->p);   // projected prizes.
-    data->graph_stat = make_graph_stat(data->p, data->m);   // head projection paras
-    // ---
-    init_global_paras(paras, global_paras);
-    //init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
-    AlgoResults *re = make_algo_results(data->p, data->n_tr);
-    _algo_spauc(data, paras, re, version, 1, para_s, para_b, para_xi, para_l2_reg);
-    PyObject *results = get_results(data->p, re);
-    free_graph_stat(data->graph_stat);
-    free(data->proj_prizes);
-    free(data->edges);
-    free(paras), free_algo_results(re), free(data);
-    return results;
-}
 
 
 // wrap_algo_solam_sparse
@@ -267,7 +230,6 @@ static PyMethodDef sparse_methods[] = { // hello_name
         {"c_algo_ftrl_auc",      wrap_algo_ftrl_auc,      METH_VARARGS, "docs"},
         {"c_algo_ftrl_auc_fast", wrap_algo_ftrl_auc_fast, METH_VARARGS, "docs"},
         {"c_algo_ftrl_proximal", wrap_algo_ftrl_proximal, METH_VARARGS, "docs"},
-        {"c_algo_graph_am",      wrap_algo_graph_am,      METH_VARARGS, "docs"},
         {"c_algo_fsauc",         wrap_algo_fsauc,         METH_VARARGS, "docs"},
         {NULL, NULL, 0, NULL}};
 

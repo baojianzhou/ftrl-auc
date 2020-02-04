@@ -9,6 +9,5 @@ FLAGS="-g -shared  -Wall -fPIC -std=c11 -O3"
 INCLUDE="-I${PYTHON_PATH} -I${NUMPY_PATH} -I${OPENBLAS_PATH}"
 LIB="-L${OPENBLAS_LIB} -L${PYTHON_LIB}"
 SRC="algo_wrapper/main_wrapper.c algo_wrapper/sort.h algo_wrapper/sort.c 
-algo_wrapper/online_methods.h algo_wrapper/online_methods.c 
-algo_wrapper/fast_pcst.c algo_wrapper/fast_pcst.h algo_wrapper/loss.c algo_wrapper/loss.h"
+algo_wrapper/online_methods.h algo_wrapper/online_methods.c algo_wrapper/loss.c algo_wrapper/loss.h"
 gcc ${FLAGS} ${INCLUDE} ${LIB} ${SRC} -o sparse_module.so -lopenblas -lm
