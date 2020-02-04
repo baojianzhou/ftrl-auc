@@ -619,11 +619,9 @@ def show_auc_curves(dataset):
     plt.rcParams["font.serif"] = "Times"
     plt.rcParams["font.size"] = 16
     rc('text', usetex=True)
-    rcParams['figure.figsize'] = 10, 4
+    rcParams['figure.figsize'] = 4, 4
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
-    list_methods = ['spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    label_list = ['SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC']
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)

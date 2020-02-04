@@ -357,9 +357,7 @@ void _cal_sparse_ratio(AlgoResults *re, int d) {
 }
 
 int _check_step_size(int tt) {
-    if (tt < 100) {
-        return tt % 5;
-    } else if (tt < 1100) {
+    if (tt < 1100) {
         return tt % 50;
     } else if (tt < 11100) {
         return tt % 500;
