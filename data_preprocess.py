@@ -362,10 +362,11 @@ def data_process_03_realsim(num_trials=10):
     pkl.dump(data, open(os.path.join(root_path, '03_real_sim/processed_03_real_sim.pkl'), 'wb'))
 
 
-def data_process_09_kdd2010(num_trials=1):
-    # tr: 19,264,097 te: 748,401 p: 1,163,024
-    data = {'file_path': root_path + '09_kdd2010/raw_kddb',
-            'data_name': '09_kdd2010',
+def data_process_04_avazu(num_trials=1):
+    # tr: 12,642,186
+    # va: 1,953,951
+    data = {'file_path': root_path + '04_avazu/raw_avazu',
+            'data_name': '04_avazu',
             'x_tr_vals': [],
             'x_tr_inds': [],
             'x_tr_poss': [],
@@ -404,7 +405,7 @@ def data_process_09_kdd2010(num_trials=1):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = 1163024
+    data['p'] = 1000000
     if data['p'] != (max_id - min_id + 1):
         print('number of nonzero features: %d' % len(feature_indices))
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
@@ -417,7 +418,7 @@ def data_process_09_kdd2010(num_trials=1):
     print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
     print('number of num_nonzeros: %d' % data['num_nonzeros'])
     print('k: %d' % data['k'])
-    fix_tr, fix_val = 19264097, 748401
+    fix_tr, fix_val = 12642186, 1953951
     for _ in range(num_trials):
         all_indices = np.arange(0, fix_tr + fix_val)
         print(all_indices[:5])
@@ -788,11 +789,10 @@ def data_process_08_farmads(num_trials=10):
     return data
 
 
-def data_process_04_avazu(num_trials=1):
-    # tr: 12,642,186
-    # va: 1,953,951
-    data = {'file_path': root_path + '04_avazu/raw_avazu',
-            'data_name': '04_avazu',
+def data_process_09_kdd2010(num_trials=1):
+    # tr: 19,264,097 te: 748,401 p: 1,163,024
+    data = {'file_path': root_path + '09_kdd2010/raw_kddb',
+            'data_name': '09_kdd2010',
             'x_tr_vals': [],
             'x_tr_inds': [],
             'x_tr_poss': [],
@@ -831,7 +831,7 @@ def data_process_04_avazu(num_trials=1):
     data['x_tr_poss'] = np.asarray(data['x_tr_poss'], dtype=np.int32)
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
-    data['p'] = 1000000
+    data['p'] = 1163024
     if data['p'] != (max_id - min_id + 1):
         print('number of nonzero features: %d' % len(feature_indices))
     data['k'] = np.ceil(len(data['x_tr_vals']) / float(data['n']))
@@ -844,7 +844,7 @@ def data_process_04_avazu(num_trials=1):
     print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
     print('number of num_nonzeros: %d' % data['num_nonzeros'])
     print('k: %d' % data['k'])
-    fix_tr, fix_val = 12642186, 1953951
+    fix_tr, fix_val = 19264097, 748401
     for _ in range(num_trials):
         all_indices = np.arange(0, fix_tr + fix_val)
         print(all_indices[:5])

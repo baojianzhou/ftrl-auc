@@ -454,11 +454,11 @@ def result_statistics(dataset='05_rcv1_bin'):
 
 
 def result_statistics_huge(dataset='07_url'):
-    aucs = []
+    aucs, num_trials = [], 1
     list_methods = ['ftrl_fast', 'ftrl_proximal']
     for method in list_methods:
         te_auc = []
-        for _ in range(10):
+        for _ in range(num_trials):
             item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl'
                                  % (dataset, dataset, method, _)))
             metrics = item[-1]
@@ -470,7 +470,7 @@ def result_statistics_huge(dataset='07_url'):
     run_times = []
     for method in list_methods:
         run_time = []
-        for _ in range(10):
+        for _ in range(num_trials):
             item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl'
                                  % (dataset, dataset, method, _)))
             metrics = item[-1]
@@ -482,7 +482,7 @@ def result_statistics_huge(dataset='07_url'):
     sparse_ratios = []
     for method in list_methods:
         sparse_ratio = []
-        for _ in range(10):
+        for _ in range(num_trials):
             item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl'
                                  % (dataset, dataset, method, _)))
             metrics = item[-1]
@@ -541,9 +541,17 @@ def result_sparsity(dataset='03_real_sim'):
 
 def result_curves_huge(dataset='07_url'):
     import matplotlib.pyplot as plt
+    from matplotlib import rc
+    from pylab import rcParams
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = "Times"
+    plt.rcParams["font.size"] = 16
+    rc('text', usetex=True)
+    rcParams['figure.figsize'] = 10, 4
+
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
     fig, ax = plt.subplots(1, 2)
-    num_trials = 10
+    num_trials = 1
     for ind, method in enumerate(['ftrl_fast', 'ftrl_proximal']):
         rts_matrix, aucs_matrix = None, None
         for _ in range(num_trials):
@@ -558,10 +566,21 @@ def result_curves_huge(dataset='07_url'):
             aucs_matrix += aucs
         rts_matrix /= float(num_trials)
         aucs_matrix /= float(num_trials)
-        ax[0].plot(rts_matrix[:100], aucs_matrix[:100], label=label_method[ind])
-        ax[1].plot(aucs_matrix[:100], label=label_method[ind])
-    plt.legend()
-    plt.show()
+        print(len(rts_matrix), len(aucs_matrix))
+        ax[0].plot(rts_matrix[:200], aucs_matrix[:200], label=label_method[ind])
+        ax[1].plot(aucs_matrix[:200], label=label_method[ind])
+    ax[0].set_ylabel('AUC')
+    ax[1].set_ylabel('AUC')
+    ax[0].set_xlabel('Run Time(seconds)')
+    ax[1].set_xlabel('Iteration * $\displaystyle 10^{4}$')
+    ax[0].legend()
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/avazu-auc.pdf'
+    plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
+def show_parameter_select():
+    pass
 
 
 if __name__ == '__main__':
@@ -579,6 +598,8 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'show_sparsity':
         result_sparsity(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_huge':
-        result_statistics_huge(dataset='07_url')
+        result_statistics_huge(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_curves_huge':
-        result_curves_huge()
+        result_curves_huge(dataset=sys.argv[2])
+    elif sys.argv[1] == 'show_para':
+        show_parameter_select()
