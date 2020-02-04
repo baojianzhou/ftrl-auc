@@ -763,6 +763,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     double *m_neg = calloc((size_t) data->p, sizeof(double));
     int m = (int) floor(0.5 * log2(2 * n_ids / log2(n_ids))) - 1;
     int n_0 = (int) floor(n_ids / m);
+    printf("m: %d n_0: %d", m, n_0);
     para_r = 2. * sqrt(3.) * R;
     double p_hat = 0.0;
     double beta = 9.0;
@@ -778,11 +779,14 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     double *y_pred = calloc((size_t) data->n_tr, sizeof(double));
     int tt = 0;
     double total_time, run_time, eval_time = 0.0;
-    for (int k = 0; k < m; k++) {
+    for (int k = 0; k < m + 1; k++) {
         memset(v_sum, 0, sizeof(double) * (data->p + 2));
         memcpy(v, v_1, sizeof(double) * (data->p + 2));
         alpha = alpha_1;
         for (int kk = 0; kk < n_0; kk++) {
+            if ((k * n_0 + kk) >= data->n_tr) {
+                break;
+            }
             int ind = data->tr_indices[k * n_0 + kk];
             double is_posi_y = is_posi(data->y[ind]);
             double is_nega_y = is_nega(data->y[ind]);

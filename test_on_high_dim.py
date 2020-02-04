@@ -622,8 +622,6 @@ def show_auc_curves(dataset):
     rcParams['figure.figsize'] = 4, 4
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
-    list_methods = ['ftrl_fast', 'ftrl_proximal']
-    label_list = ['FTRL-AUC', 'FTRL-Proximal']
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
@@ -632,8 +630,7 @@ def show_auc_curves(dataset):
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         xx = range(0, 1100, 50)
         xx.extend(range(1100, 11100, 500))
-        print(xx[:10])
-        plt.plot(xx[:len(aucs)], aucs, '-o', label=label_list[ind])
+        plt.plot(xx[:len(aucs)], aucs, '-', label=label_list[ind])
     plt.legend()
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
