@@ -25,6 +25,7 @@ try:
         from sparse_module import c_algo_spauc
         from sparse_module import c_algo_solam
         from sparse_module import c_algo_fsauc
+        from sparse_module import c_algo_spauc
         from sparse_module import c_algo_ftrl_auc
         from sparse_module import c_algo_ftrl_auc_fast
         from sparse_module import c_algo_ftrl_proximal
@@ -180,13 +181,13 @@ def cv_spauc(input_para):
             best_auc, para = va_auc, (para_mu, para_l1)
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_r, para_g = para
-    wt, aucs, rts, metrics = c_algo_fsauc(
+    para_mu, para_l1 = para
+    wt, aucs, rts, metrics = c_algo_spauc(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        1, data['p'], global_paras, para_r, para_g)
-    return trial_i, (para_r, para_g), cv_res, wt, aucs, rts, metrics
+        1, data['p'], global_paras, para_mu, para_l1)
+    return trial_i, (para_mu, para_l1), cv_res, wt, aucs, rts, metrics
 
 
 def cv_solam(input_para):
