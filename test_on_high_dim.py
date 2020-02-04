@@ -324,7 +324,7 @@ def cv_ftrl_proximal(input_para):
         1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
     print(para_gamma, para_l1, metrics[1])
     sys.stdout.flush()
-    return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
+    return trial_i, (para_l1, para_l2, para_beta, para_gamma), cv_res, wt, aucs, rts, metrics
 
 
 def cv_rda_l1(input_para):
@@ -612,6 +612,26 @@ def show_parameter_select():
     pass
 
 
+def show_auc_curves(dataset):
+    import matplotlib.pyplot as plt
+    from matplotlib import rc
+    from pylab import rcParams
+    plt.rcParams["font.family"] = "serif"
+    plt.rcParams["font.serif"] = "Times"
+    plt.rcParams["font.size"] = 16
+    rc('text', usetex=True)
+    rcParams['figure.figsize'] = 10, 4
+    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
+    num_trials = 10
+    for method in list_methods:
+        print(method)
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
+        rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
+        plt.plot(rts, aucs)
+    plt.show()
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
@@ -623,6 +643,8 @@ if __name__ == '__main__':
                              task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
         result_statistics(dataset=sys.argv[2])
+    elif sys.argv[1] == 'show_auc_curves':
+        show_auc_curves(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_sparsity':
         result_sparsity(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_huge':
