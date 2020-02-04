@@ -359,8 +359,6 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
-    elif dataset == '10_gisette':
-        data = data_process_08_farmads()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
@@ -584,7 +582,6 @@ def show_parameter_select():
 
 
 if __name__ == '__main__':
-    # 05_rcv1_bin
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
                              dataset=sys.argv[3],
