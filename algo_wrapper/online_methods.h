@@ -9,7 +9,6 @@
 #include <limits.h>
 // These are the third part library needed.
 #include <cblas.h>
-#include "fast_pcst.h"
 #include "loss.h"
 
 #define PI 3.14159265358979323846
@@ -47,17 +46,6 @@ AlgoResults *make_algo_results(int data_p, int total_num_eval);
 
 bool free_algo_results(AlgoResults *re);
 
-
-typedef struct {
-    Array *re_nodes;
-    Array *re_edges;
-    double *prizes;
-    double *costs;
-    int num_pcst;
-    double run_time;
-    int num_iter;
-} GraphStat;
-
 typedef struct {
     const double *x_vals;
     const int *x_inds;
@@ -74,29 +62,12 @@ typedef struct {
     int n_va;
     int n_te;
     int p;
-    bool is_graph; // this is only for the graph operator.
-    int m; // number of edges.
-    EdgePair *edges;
-    double *weights;
-    int g;
-    double *proj_prizes;
-    GraphStat *graph_stat;
 } Data;
-
-GraphStat *make_graph_stat(int p, int m);
-
-bool free_graph_stat(GraphStat *graph_stat);
 
 typedef struct {
     double val;
     int index;
 } data_pair;
-
-bool head_tail_binsearch(
-        const EdgePair *edges, const double *costs, const double *prizes,
-        int n, int m, int target_num_clusters, int root, int sparsity_low,
-        int sparsity_high, int max_num_iter, PruningMethod pruning,
-        int verbose, GraphStat *stat);
 
 /**
  * SOLAM: Stochastic Online AUC Maximization
@@ -158,17 +129,17 @@ void _algo_spam(Data *data,
  * @param para_s
  * @param para_b
  * @param para_c
- * @param para_l2_re
+ * @param para_l2_reg
  */
-void _algo_sht_am(Data *data,
-                  GlobalParas *paras,
-                  AlgoResults *re,
-                  int version,
-                  int operator_id,
-                  int para_s,
-                  int para_b,
-                  double para_c,
-                  double para_l2_re);
+void _algo_spauc(Data *data,
+                 GlobalParas *paras,
+                 AlgoResults *re,
+                 int version,
+                 int operator_id,
+                 int para_s,
+                 int para_b,
+                 double para_c,
+                 double para_l2_reg);
 
 
 /**

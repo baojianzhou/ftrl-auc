@@ -58,126 +58,7 @@ bool free_algo_results(AlgoResults *re) {
     return true;
 }
 
-GraphStat *make_graph_stat(int p, int m) {
-    GraphStat *stat = malloc(sizeof(GraphStat));
-    stat->num_pcst = 0;
-    stat->re_edges = malloc(sizeof(Array));
-    stat->re_edges->size = 0;
-    stat->re_edges->array = malloc(sizeof(int) * p);
-    stat->re_nodes = malloc(sizeof(Array));
-    stat->re_nodes->size = 0;
-    stat->re_nodes->array = malloc(sizeof(int) * p);
-    stat->run_time = 0;
-    stat->costs = malloc(sizeof(double) * m);
-    stat->prizes = malloc(sizeof(double) * p);
-    return stat;
-}
 
-bool free_graph_stat(GraphStat *graph_stat) {
-    free(graph_stat->re_nodes->array);
-    free(graph_stat->re_nodes);
-    free(graph_stat->re_edges->array);
-    free(graph_stat->re_edges);
-    free(graph_stat->costs);
-    free(graph_stat->prizes);
-    free(graph_stat);
-    return true;
-}
-
-
-bool head_tail_binsearch(
-        const EdgePair *edges, const double *costs, const double *prizes,
-        int n, int m, int target_num_clusters, int root, int sparsity_low,
-        int sparsity_high, int max_num_iter, PruningMethod pruning,
-        int verbose, GraphStat *stat) {
-
-    // malloc: cur_costs, sorted_prizes, and sorted_indices
-    // free: cur_costs, sorted_prizes, and sorted_indices
-    double *cur_costs = malloc(sizeof(double) * m);
-    double *sorted_prizes = malloc(sizeof(double) * n);
-    int *sorted_indices = malloc(sizeof(int) * n);
-    for (int ii = 0; ii < m; ii++) {
-        cur_costs[ii] = costs[ii];
-    }
-    for (int ii = 0; ii < n; ii++) {
-        sorted_prizes[ii] = prizes[ii];
-    }
-    int guess_pos = n - sparsity_high;
-    _arg_sort_descend(sorted_prizes, sorted_indices, n);
-    double lambda_low = 0.0;
-    double lambda_high = fabs(2.0 * sorted_prizes[sorted_indices[guess_pos]]);
-    if (lambda_high == 0.0) {
-        guess_pos = n - sparsity_low;
-        lambda_high = fabs(2.0 * sorted_prizes[sorted_indices[guess_pos]]);
-        if (lambda_high != 0.0) {
-        } else {
-            lambda_high = fabs(prizes[0]);
-            for (int ii = 1; ii < n; ii++) {
-                lambda_high = fmax(lambda_high, fabs(prizes[ii]));
-            }
-            lambda_high *= 2.0;
-        }
-    }
-    stat->num_iter = 0;
-    lambda_high /= 2.0;
-    int cur_k;
-    do {
-        stat->num_iter += 1;
-        lambda_high *= 2.0;
-        if (lambda_high <= 0.0) { printf("lambda_high: %.6e\n", lambda_high); }
-        for (int ii = 0; ii < m; ii++) {
-            cur_costs[ii] = lambda_high * costs[ii];
-        }
-        PCST *pcst = make_pcst(edges, prizes, cur_costs, root, target_num_clusters,
-                               1e-10, pruning, n, m, verbose);
-        run_pcst(pcst, stat->re_nodes, stat->re_edges);
-        free_pcst(pcst);
-        cur_k = stat->re_nodes->size;
-        if (verbose >= 1) printf("increase:   l_high: %e  k: %d\n", lambda_high, cur_k);
-    } while (cur_k > sparsity_high && stat->num_iter < max_num_iter);
-
-    if (stat->num_iter < max_num_iter && cur_k >= sparsity_low) {
-        if (verbose >= 1) printf("Found good lambda in exponential increase phase, returning.\n");
-        free(cur_costs);
-        free(sorted_prizes);
-        free(sorted_indices);
-        return true;
-    }
-    double lambda_mid;
-    while (stat->num_iter < max_num_iter) {
-        stat->num_iter += 1;
-        lambda_mid = (lambda_low + lambda_high) / 2.0;
-        if (lambda_mid <= 0.0) { printf("lambda_mid: %.6e\n", lambda_mid); }
-        for (int ii = 0; ii < m; ii++) { cur_costs[ii] = lambda_mid * costs[ii]; }
-
-        PCST *pcst = make_pcst(edges, prizes, cur_costs, root, target_num_clusters, 1e-10,
-                               pruning, n, m, verbose);
-        run_pcst(pcst, stat->re_nodes, stat->re_edges);
-        free_pcst(pcst);
-        cur_k = stat->re_nodes->size;
-        if (sparsity_low <= cur_k && cur_k <= sparsity_high) {
-            free(cur_costs);
-            free(sorted_prizes);
-            free(sorted_indices);
-            return true;
-        }
-        if (cur_k > sparsity_high) {
-            lambda_low = lambda_mid;
-        } else {
-            lambda_high = lambda_mid;
-        }
-    }
-    if (lambda_high <= 0.0) { printf("lambda_high: %.6e\n", lambda_high); }
-    for (int ii = 0; ii < m; ++ii) { cur_costs[ii] = lambda_high * costs[ii]; }
-    PCST *pcst = make_pcst(edges, prizes, cur_costs, root, target_num_clusters,
-                           1e-10, pruning, n, m, verbose);
-    run_pcst(pcst, stat->re_nodes, stat->re_edges);
-    free_pcst(pcst);
-    free(cur_costs);
-    free(sorted_prizes);
-    free(sorted_indices);
-    return true;
-}
 
 /**
  * Calculate the AUC score.
@@ -433,7 +314,7 @@ void _evaluate_aucs(Data *data, double *y_pred, AlgoResults *re, double start_ti
 }
 
 
-double eval_auc(Data *data, AlgoResults *re, bool is_va) {
+double _eval_auc(Data *data, AlgoResults *re, bool is_va) {
     double *true_labels;
     int num_samples;
     if (is_va) {
@@ -466,7 +347,7 @@ double eval_auc(Data *data, AlgoResults *re, bool is_va) {
     return auc_score;
 }
 
-void cal_sparse_ratio(AlgoResults *re, int d) {
+void _cal_sparse_ratio(AlgoResults *re, int d) {
     re->nonzero_wt = 0;
     for (int i = 0; i < d; i++) {
         if (re->wt[i] != 0.0) {
@@ -561,7 +442,7 @@ bool _algo_solam(
         memcpy(re->wt, v_bar, sizeof(double) * (data->p));
         if (tt % paras->eval_step == 0 || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, false);
+            re->aucs[re->auc_len] = _eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -579,9 +460,9 @@ bool _algo_solam(
     re->run_time = run_time;
     re->eval_time = eval_time;
     re->total_time = total_time;
-    cal_sparse_ratio(re, data->p);
-    re->va_auc = eval_auc(data, re, true);
-    re->te_auc = eval_auc(data, re, false);
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);
@@ -687,7 +568,7 @@ void _algo_spam(Data *data,
         // evaluate the AUC score
         if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, false);
+            re->aucs[re->auc_len] = _eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -705,9 +586,9 @@ void _algo_spam(Data *data,
     re->run_time = run_time;
     re->eval_time = eval_time;
     re->total_time = total_time;
-    cal_sparse_ratio(re, data->p);
-    re->va_auc = eval_auc(data, re, true);
-    re->te_auc = eval_auc(data, re, false);
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);
@@ -827,7 +708,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
             if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1)))
                 && paras->record_aucs == 1) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = eval_auc(data, re, false);
+                re->aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
@@ -869,9 +750,9 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     re->run_time = run_time;
     re->eval_time = eval_time;
     re->total_time = total_time;
-    cal_sparse_ratio(re, data->p);
-    re->va_auc = eval_auc(data, re, true);
-    re->te_auc = eval_auc(data, re, false);
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);
@@ -895,8 +776,8 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     free(v_1);
 }
 
-void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
-                  int version, int operator_id, int para_s, int para_b, double para_c, double para_l2_reg) {
+void _algo_spauc(Data *data, GlobalParas *paras, AlgoResults *re,
+                 int version, int operator_id, int para_s, int para_b, double para_c, double para_l2_reg) {
 
     srand((int) lrand48());
     double start_time = clock();
@@ -931,123 +812,32 @@ void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
         for (int kk = 0; kk < cur_b_size; kk++) {
             int ind = bi * para_b + kk; // initial position of block bi
             double weight, wei_x, wei_posi, wei_nega;
-            if (data->is_sparse) {
-                double xtw = 0.0;
-                const int *xt_inds = NULL;
-                const double *xt_vals = NULL;
-                xt_inds = data->x_inds + data->x_poss[ind];
-                xt_vals = data->x_vals + data->x_poss[ind];
-                for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                    xtw += (re->wt[xt_inds[tt]] * xt_vals[tt]);
-                }
-                switch (version) {
-                    case 0:
-                        memcpy(tmp, var, sizeof(double) * data->p);
-                        cblas_dscal(data->p, 1 + vtw - utw, tmp, 1);
-                        if (data->y[ind] > 0) {
-                            double part_wei = 2. * (1 - prob_p) * (xtw - utw);
-                            for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                                tmp[xt_inds[tt]] += part_wei * xt_vals[tt];
-                            }
-                            cblas_daxpy(data->p, -part_wei, posi_x, 1, tmp, 1);
-                        } else {
-                            double part_wei = 2. * prob_p * (xtw - vtw);
-                            for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                                tmp[xt_inds[tt]] += part_wei * xt_vals[tt];
-                            }
-                            cblas_daxpy(data->p, -part_wei, nega_x, 1, tmp, 1);
-                        }
-                        // calculate the gradient
-                        cblas_daxpy(data->p, 1., tmp, 1, grad_wt, 1);
-                        break;
-                    case 1:
-                        weight = data->y[ind] > 0 ? 2. * (1.0 - prob_p) * (xtw - utw) -
-                                                    2. * (1.0 + (vtw - utw)) * (1.0 - prob_p) :
-                                 2.0 * prob_p * (xtw - vtw) + 2.0 * (1.0 + (vtw - utw)) * prob_p;
-                        // calculate the gradient
-                        for (int tt = 0; tt < data->x_lens[ind]; tt++)
-                            grad_wt[xt_inds[tt]] += (weight * xt_vals[tt]); // calculate the gradient for xi
-                        break;
-                    case 2:
-                        if (data->y[ind] > 0) {
-                            wei_x = 2. * (1. - prob_p) * (xtw - vtw - 1.0);
-                            wei_posi = 2. * (1. - prob_p) * utw - 2. * prob_p * (1. - prob_p) * (utw - vtw);
-                            wei_nega = -2. * (1. - prob_p) * xtw + 2. * prob_p * (1. - prob_p) * (utw - vtw);
-                        } else {
-                            wei_x = 2. * prob_p * (xtw - utw + 1.0);
-                            wei_posi = -2. * prob_p * xtw + 2. * prob_p * (1. - prob_p) * (vtw - utw);
-                            wei_nega = 2. * prob_p * vtw - 2. * prob_p * (1. - prob_p) * (vtw - utw);
-                        }
-                        // calculate the gradient
-                        for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                            grad_wt[xt_inds[tt]] += (wei_x * xt_vals[tt]);
-                        }
-                        cblas_daxpy(data->p, wei_posi, posi_x, 1, grad_wt, 1);
-                        cblas_daxpy(data->p, wei_nega, nega_x, 1, grad_wt, 1);
-                    default:
-                        break;
-                }
-
-            } else {
-                const double *cur_xt = NULL;
-                cur_xt = data->x_vals + ind * data->p;
-                double xtw = cblas_ddot(data->p, re->wt, 1, cur_xt, 1);
-                switch (version) {
-                    case 0:
-                        /**
-                         * if (data->y[ind] > 0) {
-                                wei_x = 2. * (1. - prob_p) * (xtw - utw);
-                                wei_posi = 2. * (1. - prob_p) * (-xtw + utw + (-1. - vtw + utw) * prob_p);
-                                wei_nega = 2. * (1. - prob_p) * prob_p * ((1. + vtw - utw));
-                            } else {
-                                wei_x = 2. * prob_p * (vtw - xtw);
-                                wei_posi = 2. * prob_p * (1. - prob_p) * (-1. - vtw + utw);
-                                wei_nega = 2. * prob_p * (xtw - vtw + (1. + vtw - utw) * (1. - prob_p));
-                            }
-                            // calculate the gradient
-                            cblas_daxpy(data->p, wei_x, cur_xt, 1, grad_wt, 1);
-                            cblas_daxpy(data->p, wei_posi, posi_x, 1, grad_wt, 1);
-                            cblas_daxpy(data->p, wei_nega, nega_x, 1, grad_wt, 1);
-                         */
-                        memcpy(tmp, var, sizeof(double) * data->p);
-                        cblas_dscal(data->p, 1 + vtw - utw, tmp, 1);
-                        if (data->y[ind] > 0) {
-                            double part_wei = 2. * (1 - prob_p) * (xtw - utw);
-                            cblas_daxpy(data->p, part_wei, cur_xt, 1, tmp, 1);
-                            cblas_daxpy(data->p, -part_wei, posi_x, 1, tmp, 1);
-                        } else {
-                            double part_wei = 2. * prob_p * (xtw - vtw);
-                            cblas_daxpy(data->p, part_wei, cur_xt, 1, tmp, 1);
-                            cblas_daxpy(data->p, -part_wei, nega_x, 1, tmp, 1);
-                        }
-                        // calculate the gradient
-                        cblas_daxpy(data->p, 1., tmp, 1, grad_wt, 1);
-                        break;
-                    case 1:
-                        weight = data->y[ind] > 0 ? 2. * (1.0 - prob_p) * (xtw - utw) -
-                                                    2. * (1.0 + (vtw - utw)) * (1.0 - prob_p) :
-                                 2.0 * prob_p * (xtw - vtw) + 2.0 * (1.0 + (vtw - utw)) * prob_p;
-                        cblas_daxpy(data->p, weight, cur_xt, 1, grad_wt, 1); // calculate the gradient
-                        break;
-                    case 2:
-                        if (data->y[ind] > 0) {
-                            wei_x = 2. * (1. - prob_p) * (xtw - vtw - 1.0);
-                            wei_posi = 2. * (1. - prob_p) * utw - 2. * prob_p * (1. - prob_p) * (utw - vtw);
-                            wei_nega = -2. * (1. - prob_p) * xtw + 2. * prob_p * (1. - prob_p) * (utw - vtw);
-                        } else {
-                            wei_x = 2. * prob_p * (xtw - utw + 1.0);
-                            wei_posi = -2. * prob_p * xtw + 2. * prob_p * (1. - prob_p) * (vtw - utw);
-                            wei_nega = 2. * prob_p * vtw - 2. * prob_p * (1. - prob_p) * (vtw - utw);
-                        }
-                        // calculate the gradient
-                        cblas_daxpy(data->p, wei_x, cur_xt, 1, grad_wt, 1);
-                        cblas_daxpy(data->p, wei_posi, posi_x, 1, grad_wt, 1);
-                        cblas_daxpy(data->p, wei_nega, nega_x, 1, grad_wt, 1);
-                        break;
-                    default:
-                        break;
-                }
+            double xtw = 0.0;
+            const int *xt_inds = NULL;
+            const double *xt_vals = NULL;
+            xt_inds = data->x_inds + data->x_poss[ind];
+            xt_vals = data->x_vals + data->x_poss[ind];
+            for (int tt = 0; tt < data->x_lens[ind]; tt++) {
+                xtw += (re->wt[xt_inds[tt]] * xt_vals[tt]);
             }
+            memcpy(tmp, var, sizeof(double) * data->p);
+            cblas_dscal(data->p, 1 + vtw - utw, tmp, 1);
+            if (data->y[ind] > 0) {
+                double part_wei = 2. * (1 - prob_p) * (xtw - utw);
+                for (int tt = 0; tt < data->x_lens[ind]; tt++) {
+                    tmp[xt_inds[tt]] += part_wei * xt_vals[tt];
+                }
+                cblas_daxpy(data->p, -part_wei, posi_x, 1, tmp, 1);
+            } else {
+                double part_wei = 2. * prob_p * (xtw - vtw);
+                for (int tt = 0; tt < data->x_lens[ind]; tt++) {
+                    tmp[xt_inds[tt]] += part_wei * xt_vals[tt];
+                }
+                cblas_daxpy(data->p, -part_wei, nega_x, 1, tmp, 1);
+            }
+            // calculate the gradient
+            cblas_daxpy(data->p, 1., tmp, 1, grad_wt, 1);
+            break;
         }
         // wt = wt - eta * grad(wt)
         cblas_daxpy(data->p, -para_c / cur_b_size, grad_wt, 1, re->wt, 1);
@@ -1055,30 +845,8 @@ void _algo_sht_am(Data *data, GlobalParas *paras, AlgoResults *re,
         if (para_l2_reg != 0.0) {
             cblas_dscal(data->p, 1. / (para_c * para_l2_reg + 1.), re->wt, 1);
         }
-        if (operator_id == 0) {
-            // k-sparse projection step.
-            _hard_thresholding(re->wt, data->p, para_s);
-        } else if (operator_id == 1) {
-            // to do graph projection.
-            double total_prizes = 0.0;
-            for (int kk = 0; kk < data->p; kk++) {
-                data->proj_prizes[kk] = re->wt[kk] * re->wt[kk];
-                total_prizes += data->proj_prizes[kk];
-            }
-            if (total_prizes >= 1e6) {
-                printf("not good, large prizes detected.");
-            }
-            int s_low = para_s, s_high = para_s + 2;
-            head_tail_binsearch(data->edges, data->weights, data->proj_prizes,
-                                data->p, data->m, data->g, -1, s_low, s_high,
-                                20, GWPruning, 0, data->graph_stat);
-            memcpy(grad_wt, re->wt, sizeof(double) * data->p);
-            memset(re->wt, 0, sizeof(double) * data->p);
-            for (int kk = 0; kk < data->graph_stat->re_nodes->size; kk++) {
-                int cur_node = data->graph_stat->re_nodes->array[kk];
-                re->wt[cur_node] = grad_wt[cur_node];
-            }
-        }
+        // k-sparse projection step.
+        _hard_thresholding(re->wt, data->p, para_s);
         if (paras->record_aucs == 1) { // to evaluate AUC score
             _evaluate_aucs(data, y_pred, re, start_time);
         }
@@ -1273,7 +1041,7 @@ void _algo_ftrl_auc_fast(Data *data,
         }
         if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) && paras->record_aucs == 1) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, false);
+            re->aucs[re->auc_len] = _eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -1291,9 +1059,9 @@ void _algo_ftrl_auc_fast(Data *data,
     re->run_time = run_time;
     re->eval_time = eval_time;
     re->total_time = total_time;
-    cal_sparse_ratio(re, data->p);
-    re->va_auc = eval_auc(data, re, true);
-    re->te_auc = eval_auc(data, re, false);
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);
@@ -1371,7 +1139,7 @@ void _algo_ftrl_proximal(Data *data,
         }
         if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) && paras->record_aucs == 1) {
             double start_eval = clock();
-            re->aucs[re->auc_len] = eval_auc(data, re, false);
+            re->aucs[re->auc_len] = _eval_auc(data, re, false);
             double end_eval = clock();
             // this may not be very accurate.
             eval_time += end_eval - start_eval;
@@ -1389,9 +1157,9 @@ void _algo_ftrl_proximal(Data *data,
     re->run_time = run_time;
     re->eval_time = eval_time;
     re->total_time = total_time;
-    cal_sparse_ratio(re, data->p);
-    re->va_auc = eval_auc(data, re, true);
-    re->te_auc = eval_auc(data, re, false);
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
     printf("\n-------------------------------------------------------\n");
     printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
            data->p, data->n_tr, data->n_va, data->n_te);

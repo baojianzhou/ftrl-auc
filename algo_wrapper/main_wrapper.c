@@ -249,7 +249,7 @@ static PyObject *wrap_algo_graph_am(PyObject *self, PyObject *args) {
     init_global_paras(paras, global_paras);
     //init_data(data, x_tr_vals, x_tr_inds, x_tr_poss, x_tr_lens, data_y_tr, data_perm);
     AlgoResults *re = make_algo_results(data->p, data->n_tr);
-    _algo_sht_am(data, paras, re, version, 1, para_s, para_b, para_xi, para_l2_reg);
+    _algo_spauc(data, paras, re, version, 1, para_s, para_b, para_xi, para_l2_reg);
     PyObject *results = get_results(data->p, re);
     free_graph_stat(data->graph_stat);
     free(data->proj_prizes);

@@ -417,6 +417,7 @@ def run_huge_dimensional(method, dataset, task_id):
 def result_statistics(dataset='05_rcv1_bin'):
     aucs = []
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam', 'ftrl_proximal']
+    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
