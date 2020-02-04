@@ -112,8 +112,8 @@ def cv_ftrl_fast(input_para):
     best_auc, para, cv_res = None, None, dict()
     for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
                                        [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
-        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        para_l2, para_beta = 0.0, 1.0
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
@@ -140,13 +140,14 @@ def cv_fsauc(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float), 2. ** np.arange(-10, 11, 1, dtype=float)):
-        verbose, eval_step, record_aucs = 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_fsauc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
             1, data['p'], global_paras, para_r, para_g)
+        print(rts)
+        print(aucs)
         cv_res[(trial_i, para_r, para_g)] = metrics
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
@@ -168,8 +169,7 @@ def cv_spauc(input_para):
     l1_arr = 10. ** np.asarray([-5.0, -4.0, -3.0, -2.0, -1.0, 0.0])
     best_auc, para, cv_res = None, None, dict()
     for para_mu, para_l1 in product(mu_arr, l1_arr):
-        verbose, eval_step, record_aucs = 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_spauc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
@@ -194,8 +194,7 @@ def cv_solam(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     for para_xi, para_r in product(np.arange(1, 101, 9, dtype=float), 10. ** np.arange(-1, 6, 1, dtype=float)):
-        verbose, eval_step, record_aucs = 1, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_solam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
@@ -622,14 +621,20 @@ def show_auc_curves(dataset):
     rc('text', usetex=True)
     rcParams['figure.figsize'] = 10, 4
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
+    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
+    list_methods = ['spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = ['SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC']
     num_trials = 10
-    for method in list_methods:
+    for ind, method in enumerate(list_methods):
         print(method)
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
-        plt.plot(rts, aucs)
-    plt.show()
+        plt.plot(aucs, '-o', label=label_list[ind])
+    plt.legend()
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
+    plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
 
 
 if __name__ == '__main__':

@@ -825,6 +825,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
             if (((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1)))
                 && paras->record_aucs == 1) {
                 double start_eval = clock();
+                memcpy(re->wt, v_ave, sizeof(double) * data->p);
                 re->aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
