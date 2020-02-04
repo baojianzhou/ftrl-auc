@@ -186,7 +186,7 @@ def cv_spauc(input_para):
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        1, data['p'], global_paras, para_mu, para_l1)
+        data['p'], global_paras, para_mu, para_l1)
     return trial_i, (para_mu, para_l1), cv_res, wt, aucs, rts, metrics
 
 
