@@ -11,7 +11,6 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam
-from data_preprocess import data_process_01_webspam_small
 from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_07_url
 from data_preprocess import data_process_08_farmads
@@ -23,6 +22,7 @@ try:
 
     try:
         from sparse_module import c_algo_spam
+        from sparse_module import c_algo_spauc
         from sparse_module import c_algo_solam
         from sparse_module import c_algo_fsauc
         from sparse_module import c_algo_ftrl_auc
@@ -150,6 +150,34 @@ def cv_fsauc(input_para):
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
             best_auc, para = va_auc, (para_r, para_g)
+    verbose, eval_step, record_aucs = 0, 100, 1
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_r, para_g = para
+    wt, aucs, rts, metrics = c_algo_fsauc(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        1, data['p'], global_paras, para_r, para_g)
+    return trial_i, (para_r, para_g), cv_res, wt, aucs, rts, metrics
+
+
+def cv_spauc(input_para):
+    data, trial_i = input_para
+    mu_arr = 10. ** np.asarray([-7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5])
+    l1_arr = 10. ** np.asarray([-5.0, -4.0, -3.0, -2.0, -1.0, 0.0])
+    best_auc, para, cv_res = None, None, dict()
+    for para_mu, para_l1 in product(mu_arr, l1_arr):
+        verbose, eval_step, record_aucs = 0, data['n'], 0
+        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        wt, aucs, rts, metrics = c_algo_spauc(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            data['p'], global_paras, para_mu, para_l1)
+        cv_res[(trial_i, para_mu, para_l1)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_mu, para_l1)
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_r, para_g = para
@@ -366,6 +394,8 @@ def run_high_dimensional(method, dataset, num_cpus):
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_fast':
         ms_res = pool.map(cv_ftrl_fast, para_space)
+    elif method == 'spauc':
+        ms_res = pool.map(cv_spauc, para_space)
     elif method == 'fsauc':
         ms_res = pool.map(cv_fsauc, para_space)
     elif method == 'solam':

@@ -134,12 +134,8 @@ void _algo_spam(Data *data,
 void _algo_spauc(Data *data,
                  GlobalParas *paras,
                  AlgoResults *re,
-                 int version,
-                 int operator_id,
-                 int para_s,
-                 int para_b,
-                 double para_c,
-                 double para_l2_reg);
+                 double para_mu,
+                 double para_l1);
 
 
 /**

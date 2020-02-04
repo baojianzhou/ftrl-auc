@@ -59,7 +59,6 @@ bool free_algo_results(AlgoResults *re) {
 }
 
 
-
 /**
  * Calculate the AUC score.
  * We assume true labels contain only +1,-1
@@ -355,6 +354,124 @@ void _cal_sparse_ratio(AlgoResults *re, int d) {
         }
     }
     re->sparse_ratio = (double) re->nonzero_wt / (double) d;
+}
+
+
+void _algo_spauc(Data *data,
+                 GlobalParas *paras,
+                 AlgoResults *re,
+                 double para_mu,
+                 double para_l1) {
+
+    double start_time = clock();
+    openblas_set_num_threads(1);
+    double *grad_wt = malloc(sizeof(double) * data->p); // gradient
+    double *posi_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=1]
+    double *nega_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=-1]
+    double *y_pred = calloc((size_t) data->n, sizeof(double));
+    double a_wt = 0.0, b_wt = 0.0;
+    double posi_t = 0.0, nega_t = 0.0;
+    double prob_p = 0.0;
+    double eta_t;
+    double total_time, run_time, eval_time = 0.0;
+    for (int tt = 0; tt < data->n_tr; tt++) {
+        int ind = data->tr_indices[tt];
+        eta_t = 2. / (para_mu * tt + 1.0); // current learning rate
+        const int *xt_inds;
+        const double *xt_vals;
+        double xtw = 0.0;
+        // receive zt=(xt,yt)
+        xt_inds = data->x_inds + data->x_poss[ind];
+        xt_vals = data->x_vals + data->x_poss[ind];
+        if (data->y[ind] > 0) {
+            posi_t++;
+            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+                posi_x[xt_inds[ii]] += xt_vals[ii];
+            }
+            prob_p = (tt * prob_p + 1.) / (tt + 1.0);
+            // update a(wt)
+            a_wt = cblas_ddot(data->p, re->wt, 1, posi_x, 1) / posi_t;
+        } else {
+            nega_t++;
+            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+                xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+                nega_x[xt_inds[ii]] += xt_vals[ii];
+            }
+            prob_p = (tt * prob_p) / (tt + 1.0);
+            // update b(wt)
+            b_wt = cblas_ddot(data->p, re->wt, 1, nega_x, 1) / nega_t;
+        }
+        double wei_x, wei_posi, wei_nega;
+        if (data->y[ind] > 0) {
+            wei_x = 2. * (1. - prob_p) * (xtw - a_wt);
+            wei_posi = 2. * (1. - prob_p) * (a_wt - xtw - prob_p * (1. + b_wt - a_wt));
+            wei_nega = 2. * prob_p * (1. - prob_p) * (1. + b_wt - a_wt);
+        } else {
+            wei_x = 2. * prob_p * (xtw - b_wt);
+            wei_posi = 2. * prob_p * (1. - prob_p) * (-1. - b_wt + a_wt);
+            wei_nega = 2. * prob_p * (b_wt - xtw - (1.0 - prob_p) * (-1. - b_wt + a_wt));
+        }
+        memset(grad_wt, 0, sizeof(double) * (data->p));
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            grad_wt[xt_inds[ii]] = wei_x * xt_vals[ii];
+        }
+        if (nega_t > 0) {
+            wei_nega /= nega_t;
+        } else {
+            wei_nega = 0.0;
+        }
+        if (posi_t > 0) {
+            wei_posi /= posi_t;
+        } else {
+            wei_posi = 0.0;
+        }
+        // gradient descent
+        cblas_daxpy(data->p, wei_nega, nega_x, 1, grad_wt, 1);
+        cblas_daxpy(data->p, wei_posi, posi_x, 1, grad_wt, 1);
+        double tmp;
+        for (int ii = 0; ii < data->p; ii++) {
+            tmp = re->wt[ii] - eta_t * grad_wt[ii];
+            double tmp_sign = (double) sign(tmp);
+            re->wt[ii] = tmp_sign * fmax(0.0, fabs(tmp) - eta_t * para_l1);
+        }
+        // evaluate the AUC score
+        if ((tt % paras->eval_step == 0) || (tt == (data->n_tr - 1))) {
+            double start_eval = clock();
+            re->aucs[re->auc_len] = _eval_auc(data, re, false);
+            double end_eval = clock();
+            // this may not be very accurate.
+            eval_time += end_eval - start_eval;
+            run_time = (end_eval - start_time) - eval_time;
+            re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+            if (paras->verbose > 0) {
+                printf("tt: %d auc: %.4f n_va:%d\n",
+                       tt, re->aucs[re->auc_len - 1], data->n_va);
+            }
+        }
+    }
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
+    printf("\n-------------------------------------------------------\n");
+    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+           data->p, data->n_tr, data->n_va, data->n_te);
+    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+           run_time, eval_time, total_time);
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+    printf("para_mu: %.4f para_l1: %.4f sparse_ratio: %.4f\n",
+           para_mu, para_l1, re->sparse_ratio);
+    printf("\n-------------------------------------------------------\n");
+    free(y_pred);
+    free(nega_x);
+    free(posi_x);
+    free(grad_wt);
 }
 
 
@@ -774,90 +891,6 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     free(sx_neg);
     free(sx_pos);
     free(v_1);
-}
-
-void _algo_spauc(Data *data, GlobalParas *paras, AlgoResults *re,
-                 int version, int operator_id, int para_s, int para_b, double para_c, double para_l2_reg) {
-
-    srand((int) lrand48());
-    double start_time = clock();
-    openblas_set_num_threads(1);
-
-    double *posi_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=1]
-    double *nega_x = calloc((size_t) data->p, sizeof(double)); // E[x|y=-1]
-    double *y_pred = calloc((size_t) data->n_tr, sizeof(double)); // y_predication
-    double *grad_wt = calloc((size_t) data->p, sizeof(double)); // gradient
-    double *var = calloc((size_t) data->p, sizeof(double));
-    double *tmp = calloc((size_t) data->p, sizeof(double));
-
-    double posi_t = 0.0;
-    double nega_t = 0.0;
-    double prob_p;
-    int min_b_ind = 0;
-    int max_b_ind = data->n_tr / para_b;
-    _get_posi_nega_x(posi_x, nega_x, &posi_t, &nega_t, &prob_p, data);
-    memcpy(var, nega_x, sizeof(double) * data->p);
-    cblas_daxpy(data->p, -1.0, posi_x, 1, var, 1);
-    cblas_dscal(data->p, 2.0 * prob_p * (1.0 - prob_p), var, 1);
-    for (int t = 1; t <= data->n_tr; t++) { // for each block
-        // block bi is in [min_b_ind,max_b_ind-1]
-        int bi = (int) (lrand48() % (max_b_ind - min_b_ind));
-        double utw = cblas_ddot(data->p, re->wt, 1, posi_x, 1);
-        double vtw = cblas_ddot(data->p, re->wt, 1, nega_x, 1);
-        // the gradient of a block training samples
-        memset(grad_wt, 0, sizeof(double) * data->p);
-        // take care of the last block
-        int cur_b_size = (bi == (max_b_ind - 1) ? para_b + (data->n_tr % para_b) : para_b);
-        // for each block of training samples
-        for (int kk = 0; kk < cur_b_size; kk++) {
-            int ind = bi * para_b + kk; // initial position of block bi
-            double weight, wei_x, wei_posi, wei_nega;
-            double xtw = 0.0;
-            const int *xt_inds = NULL;
-            const double *xt_vals = NULL;
-            xt_inds = data->x_inds + data->x_poss[ind];
-            xt_vals = data->x_vals + data->x_poss[ind];
-            for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                xtw += (re->wt[xt_inds[tt]] * xt_vals[tt]);
-            }
-            memcpy(tmp, var, sizeof(double) * data->p);
-            cblas_dscal(data->p, 1 + vtw - utw, tmp, 1);
-            if (data->y[ind] > 0) {
-                double part_wei = 2. * (1 - prob_p) * (xtw - utw);
-                for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                    tmp[xt_inds[tt]] += part_wei * xt_vals[tt];
-                }
-                cblas_daxpy(data->p, -part_wei, posi_x, 1, tmp, 1);
-            } else {
-                double part_wei = 2. * prob_p * (xtw - vtw);
-                for (int tt = 0; tt < data->x_lens[ind]; tt++) {
-                    tmp[xt_inds[tt]] += part_wei * xt_vals[tt];
-                }
-                cblas_daxpy(data->p, -part_wei, nega_x, 1, tmp, 1);
-            }
-            // calculate the gradient
-            cblas_daxpy(data->p, 1., tmp, 1, grad_wt, 1);
-            break;
-        }
-        // wt = wt - eta * grad(wt)
-        cblas_daxpy(data->p, -para_c / cur_b_size, grad_wt, 1, re->wt, 1);
-        // ell_2 reg. we do not need it in our case.
-        if (para_l2_reg != 0.0) {
-            cblas_dscal(data->p, 1. / (para_c * para_l2_reg + 1.), re->wt, 1);
-        }
-        // k-sparse projection step.
-        _hard_thresholding(re->wt, data->p, para_s);
-        if (paras->record_aucs == 1) { // to evaluate AUC score
-            _evaluate_aucs(data, y_pred, re, start_time);
-        }
-    }
-    cblas_dscal(re->auc_len, 1. / CLOCKS_PER_SEC, re->rts, 1);
-    free(var);
-    free(tmp);
-    free(y_pred);
-    free(nega_x);
-    free(posi_x);
-    free(grad_wt);
 }
 
 void _algo_ftrl_auc(Data *data,

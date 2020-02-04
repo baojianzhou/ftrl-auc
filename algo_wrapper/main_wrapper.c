@@ -103,6 +103,30 @@ static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
     return results;
 }
 
+
+static PyObject *wrap_algo_spauc(PyObject *self, PyObject *args) {
+    if (self != NULL) { printf("%zd", self->ob_refcnt); }
+    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
+    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
+    Data *data = malloc(sizeof(Data));
+    GlobalParas *paras = malloc(sizeof(GlobalParas));
+    double para_mu, para_l1; //SPAUC has two parameters.
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!dd",
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
+                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
+                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
+                          &data->p, &PyArray_Type, &global_paras, &para_mu, &para_l1)) { return NULL; }
+    init_global_paras(paras, global_paras);
+    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
+    AlgoResults *re = make_algo_results(data->p, data->n);
+    _algo_spauc(data, paras, re, para_mu, para_l1);
+    PyObject *results = get_results(data->p, re);
+    free_algo_results(re);
+    free(paras);
+    free(data);
+    return results;
+}
+
 static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
     PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
@@ -221,11 +245,11 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
 }
 
 
-
 // wrap_algo_solam_sparse
 static PyMethodDef sparse_methods[] = { // hello_name
         {"c_test",               test,                    METH_VARARGS, "docs"},
         {"c_algo_solam",         wrap_algo_solam,         METH_VARARGS, "docs"},
+        {"c_algo_spauc",         wrap_algo_spauc,         METH_VARARGS, "docs"},
         {"c_algo_spam",          wrap_algo_spam,          METH_VARARGS, "docs"},
         {"c_algo_ftrl_auc",      wrap_algo_ftrl_auc,      METH_VARARGS, "docs"},
         {"c_algo_ftrl_auc_fast", wrap_algo_ftrl_auc_fast, METH_VARARGS, "docs"},
