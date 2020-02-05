@@ -383,7 +383,7 @@ def run_huge_dimensional(method, dataset, task_id):
 
 def result_statistics(dataset):
     aucs = []
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -628,9 +628,9 @@ def show_auc_curves(dataset):
     rcParams['figure.figsize'] = 8, 4
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC']
+    prop_cycle = plt.rcParams['axes.prop_cycle']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v']
-    # list_methods = ['ftrl_fast', 'rda_l1', 'ftrl_proximal', 'adagrad']
-    # label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal', 'AdaGrad']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm']
     fig, ax = plt.subplots(1, 2)
     num_trials = 10
     for ind, method in enumerate(list_methods):
@@ -640,10 +640,10 @@ def show_auc_curves(dataset):
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         xx = range(0, 1100, 50)
         xx.extend(range(1100, 11100, 500))
-        ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=2., markerfacecolor='w',
-                   markeredgewidth=1., label=label_list[ind])
-        ax[1].plot(xx[:len(aucs)], aucs, marker=marker_list[ind], markersize=2., markerfacecolor='w',
-                   markeredgewidth=1., label=label_list[ind])
+        ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=2.5, markerfacecolor='w',
+                   markeredgewidth=.8, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        ax[1].plot(xx[:len(aucs)], aucs, marker=marker_list[ind], markersize=2.5, markerfacecolor='w',
+                   markeredgewidth=.8, linewidth=0.5, label=label_list[ind], color=color_list[ind])
     ax[0].set_ylabel('AUC')
     ax[0].set_xlabel('Run Time')
     ax[1].set_ylabel('AUC')
