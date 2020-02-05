@@ -212,7 +212,7 @@ static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_l1, para_l2, para_beta, para_gamma;
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dddd",
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!dddd",
                           &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss, &PyArray_Type,
                           &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices, &PyArray_Type, &tr_indices,
                           &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
