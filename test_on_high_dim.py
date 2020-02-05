@@ -96,7 +96,7 @@ def cv_fsauc(input_para):
 def cv_spauc(input_para):
     data, trial_i = input_para
     mu_arr = 10. ** np.asarray([-7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5])
-    l1_arr = 10. ** np.asarray([-5.0, -4.0, -3.0, -2.0, -1.0, 0.0])
+    l1_arr = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
     best_auc, para, cv_res = None, None, dict()
     for para_mu, para_l1 in product(mu_arr, l1_arr):
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
