@@ -175,8 +175,8 @@ def cv_spam_l1(input_para):
 def cv_spam_l2(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_xi, para_l2 in product(10. ** np.arange(-5, 4, 1, dtype=float),
-                                    10. ** np.arange(-5, 4, 1, dtype=float)):
+    for para_xi, para_l2 in product(10. ** np.arange(-3, 4, 1, dtype=float),
+                                    [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
         verbose, eval_step, record_aucs = 0, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
@@ -202,9 +202,10 @@ def cv_spam_l2(input_para):
 def cv_spam_l1l2(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_xi, para_l1, para_l2 in product(10. ** np.arange(-5, 4, 1, dtype=float),
-                                             10. ** np.arange(-5, 4, 1, dtype=float),
-                                             10. ** np.arange(-5, 4, 1, dtype=float)):
+    for para_xi, para_l1, para_l2 in product(
+            10. ** np.arange(-3, 4, 1, dtype=float),
+            [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0],
+            [1e-4, 1e-3, 1e-2, 1e-1, 1e0]):
         verbose, eval_step, record_aucs = 0, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
