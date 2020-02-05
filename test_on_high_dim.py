@@ -11,6 +11,7 @@ import numpy as np
 from data_preprocess import data_process_01_webspam
 from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_07_url
+from data_preprocess import data_process_03_realsim
 from data_preprocess import data_process_08_farmads
 from data_preprocess import data_process_09_kdd2010
 
@@ -356,6 +357,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
+    elif dataset == '03_real_sim':
+        data = data_process_03_realsim()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))

@@ -300,7 +300,7 @@ def data_process_03_realsim(num_trials=10):
     URL: https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html
     :return:
     """
-    np.random.seed(int(time.time()))
+    np.random.seed(17)
     data = {'file_path': root_path + '03_real_sim/raw_real_sim',
             'data_name': '03_realsim',
             'x_tr_vals': [],
@@ -359,7 +359,8 @@ def data_process_03_realsim(num_trials=10):
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
         assert data['n'] == (n_tr + n_va + n_te)
-    pkl.dump(data, open(os.path.join(root_path, '03_real_sim/processed_03_real_sim.pkl'), 'wb'))
+    sys.stdout.flush()
+    return data
 
 
 def data_process_04_avazu(num_trials=1):
@@ -868,7 +869,7 @@ def data_process_09_kdd2010(num_trials=1):
 
 
 def main():
-    data_process_08_farmads()
+    pass
 
 
 if __name__ == '__main__':
