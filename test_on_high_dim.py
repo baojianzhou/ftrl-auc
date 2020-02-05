@@ -111,8 +111,9 @@ def show_figure():
 def cv_ftrl_auc(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
+    for para_gamma, para_l1 in product(
+            [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
+            [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
         para_l2, para_beta = 0.0, 1.0
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_ftrl_auc(
@@ -644,7 +645,7 @@ def show_parameter_select(dataset):
                     sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][3]
             xx = np.mean(auc_matrix, axis=0)
             yy = np.mean(sparse_ratio_mat, axis=0)
-            plt.plot(xx, yy, label='FTRL-FAST')
+            plt.plot(xx, yy, marker='s', label='FTRL-FAST')
         elif method == 'rda_l1':
             lambda_list = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]
             auc_matrix = np.zeros(shape=(num_trials, len(lambda_list)))
@@ -656,10 +657,25 @@ def show_parameter_select(dataset):
                     sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_gamma, para_rho)][3]
             xx = np.mean(auc_matrix, axis=0)
             yy = np.mean(sparse_ratio_mat, axis=0)
-            plt.plot(xx, yy, label='RDA-L1')
+            plt.plot(xx, yy, marker='D', label='RDA-L1')
         elif method == 'ftrl_proximal':
-            pass
-    plt.show()
+            para_l1_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+            for result in results:
+                trial_i, (para_l1, para_l2, para_beta, para_gamma), cv_res, wt, aucs, rts, metrics = result
+                for ind_l1, para_l1 in enumerate(para_l1_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            plt.plot(xx, yy, marker='o', label='FTRL-Proximal')
+    plt.ylabel('Sparse-Ratio')
+    plt.xlabel('AUC')
+    plt.legend()
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/para-select-%s.pdf' % dataset
+    plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
 
 
 def show_auc_curves(dataset):
