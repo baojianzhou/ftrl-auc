@@ -141,15 +141,14 @@ def cv_ftrl_auc(input_para):
 def cv_fsauc(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float), 2. ** np.arange(-10, 11, 1, dtype=float)):
+    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float),
+                                  2. ** np.arange(-10, 11, 1, dtype=float)):
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_fsauc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
             1, data['p'], global_paras, para_r, para_g)
-        print(rts)
-        print(aucs)
         cv_res[(trial_i, para_r, para_g)] = metrics
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
@@ -401,7 +400,7 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = pkl.load(open(f_name))
     para_space = [(data, trial_i) for trial_i in range(10)]
     pool = multiprocessing.Pool(processes=num_cpus)
-    if method == 'ftrl_fast':
+    if method == 'ftrl_auc':
         ms_res = pool.map(cv_ftrl_auc, para_space)
     elif method == 'spauc':
         ms_res = pool.map(cv_spauc, para_space)
