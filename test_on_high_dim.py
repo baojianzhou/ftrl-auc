@@ -579,18 +579,21 @@ def result_curves_huge(dataset='07_url'):
 
 def show_parameter_select(dataset):
     import matplotlib.pyplot as plt
-    from matplotlib import rc
     from pylab import rcParams
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["font.serif"] = "Times"
-    plt.rcParams["font.size"] = 16
-    rc('text', usetex=True)
-    rcParams['figure.figsize'] = 4, 4
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
-    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
-    marker_list = ['s', 'D', 'o', 'H']
-    list_methods = ['ftrl_auc', 'rda_l1', 'ftrl_proximal', 'adagrad']
-    label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal', 'AdaGrad']
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 14
+    rcParams['figure.figsize'] = 8, 4
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
+    marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(1, 2)
+    ax[0].grid(which='y', color='lightgray', linewidth=0.3, linestyle='dashed', axis='both')
+    ax[1].grid(which='x', color='lightgray', linewidth=0.3, linestyle='dashed', axis='both')
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
@@ -600,13 +603,100 @@ def show_parameter_select(dataset):
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
             for result in results:
-                trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, metrics = result
+                trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
                 for ind_l1, para_l1 in enumerate(para_l1_list):
                     auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][1]
                     sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][3]
             xx = np.mean(auc_matrix, axis=0)
             yy = np.mean(sparse_ratio_mat, axis=0)
-            plt.plot(xx, yy, marker='s', label='FTRL-FAST')
+            ax[0].plot(para_l1_list, xx, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+            ax[1].plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'spam_l1':
+            para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+            for result in results:
+                trial_i, (para_xi, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_l1 in enumerate(para_l1_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            ax[0].plot(para_l1_list, xx, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+            ax[1].plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'spam_l2':
+            para_l2_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l2_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l2_list)))
+            for result in results:
+                trial_i, (para_xi, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_l2 in enumerate(para_l2_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l2)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l2)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            plt.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                     markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'spam_l1l2':
+            para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+            for result in results:
+                trial_i, (para_xi, para_l1, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_l1 in enumerate(para_l1_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1, para_l2)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1, para_l2)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            ax[0].plot(para_l1_list, xx, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+            ax[1].plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'fsauc':
+            para_r_list = 10. ** np.arange(-1, 6, 1, dtype=float)
+            auc_matrix = np.zeros(shape=(num_trials, len(para_r_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_r_list)))
+            for result in results:
+                trial_i, (para_r, para_g), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_r in enumerate(para_r_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_r, para_g)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_r, para_g)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            plt.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                     markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'solam':
+            para_r_list = 10. ** np.arange(-1, 6, 1, dtype=float)
+            auc_matrix = np.zeros(shape=(num_trials, len(para_r_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_r_list)))
+            for result in results:
+                trial_i, (para_xi, para_r), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_r in enumerate(para_r_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_r)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_r)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            plt.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                     markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'spauc':
+            para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+            for result in results:
+                trial_i, (para_mu, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_l1 in enumerate(para_l1_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            ax[0].plot(para_l1_list, xx, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+            ax[1].plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                       markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
         elif method == 'rda_l1':
             lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(lambda_list)))
@@ -643,9 +733,15 @@ def show_parameter_select(dataset):
             xx = np.mean(auc_matrix, axis=0)
             yy = np.mean(sparse_ratio_mat, axis=0)
             plt.plot(xx, yy, marker='o', label='AdaGrad')
-    plt.ylabel('Sparse-Ratio')
-    plt.xlabel('AUC')
-    plt.legend()
+    ax[0].set_ylabel('AUC')
+    ax[0].set_xlabel('$\displaystyle \lambda $')
+    ax[1].set_ylabel('Sparse-Ratio')
+    ax[1].set_xlabel('AUC')
+    ax[0].set_xscale('log')
+    ax[1].set_yscale('log')
+    plt.subplots_adjust(wspace=0.27, hspace=0.2)
+    ax[1].legend(fancybox=True, loc='upper left', framealpha=1.0, frameon=False, borderpad=0.1,
+                 labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/para-select-%s.pdf' % dataset
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
@@ -653,38 +749,45 @@ def show_parameter_select(dataset):
 
 def show_auc_curves(dataset):
     import matplotlib.pyplot as plt
-    from matplotlib import rc
     from pylab import rcParams
     plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 11
+    plt.rcParams["font.size"] = 14
     rcParams['figure.figsize'] = 8, 4
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_auc_hybrid']
-    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-AUC-Hy']
-    prop_cycle = plt.rcParams['axes.prop_cycle']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
+                  r'SOLAM', r'SPAUC', r'FSAUC']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 2, sharey=True)
+    ax[0].grid(b=True, which='both', color='lightgray', linewidth=0.3, linestyle='dashed', axis='both')
+    ax[1].grid(b=True, which='both', color='lightgray', linewidth=0.3, linestyle='dashed', axis='both')
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
-        xx = range(0, 1100, 50)
-        xx.extend(range(1100, 11100, 500))
-        ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=2.5, markerfacecolor='w',
-                   markeredgewidth=.8, linewidth=0.5, label=label_list[ind], color=color_list[ind])
-        ax[1].plot(xx[:len(aucs)], aucs, marker=marker_list[ind], markersize=2.5, markerfacecolor='w',
-                   markeredgewidth=.8, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
+        online_aucs = np.mean(np.asarray([results[trial_i][7] for trial_i in range(num_trials)]), axis=0)
+        ax[0].plot(rts, online_aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
+                   markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        ax[1].plot(iters, online_aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
+                   markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
     ax[0].set_ylabel('AUC')
     ax[0].set_xlabel('Run Time')
-    ax[1].set_ylabel('AUC')
     ax[1].set_xlabel('Samples Seen')
-    ax[0].legend(loc='lower right', framealpha=1.,
-                 bbox_to_anchor=(1.0, 0.0), frameon=True, borderpad=0.1,
-                 labelspacing=0.1, handletextpad=0.1, markerfirst=True)
-    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
+    for i in range(2):
+        ax[i].spines['right'].set_visible(False)
+        ax[i].spines['top'].set_visible(False)
+    plt.subplots_adjust(wspace=0.05, hspace=0.2)
+    ax[1].legend(fancybox=True, loc='lower right', framealpha=1.0,
+                 bbox_to_anchor=(1.0, 0.0), frameon=False, borderpad=0.1,
+                 labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-oline-%s.pdf' % dataset
     fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 

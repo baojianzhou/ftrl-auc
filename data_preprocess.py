@@ -757,6 +757,7 @@ def data_process_08_farmads(num_trials=10):
     data['y_tr'] = np.asarray(data['y_tr'], dtype=float)
     data['n'] = len(data['y_tr'])
     data['p'] = (max_id - min_id + 1)
+    print(len(feature_indices), data['p'])
     if data['p'] != (max_id - min_id + 1):
         print('number of nonzero features: %d' % len(feature_indices))
         assert data['p'] == (max_id - min_id + 1)
@@ -867,7 +868,7 @@ def data_process_09_kdd2010(num_trials=1):
 
 
 def main():
-    data_process_09_kdd2010()
+    data_process_08_farmads()
 
 
 if __name__ == '__main__':
