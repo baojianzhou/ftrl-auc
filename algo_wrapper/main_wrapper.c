@@ -28,7 +28,7 @@ static PyObject *test(PyObject *self, PyObject *args) {
 }
 
 PyObject *get_results(int data_p, AlgoResults *re) {
-    PyObject *results = PyTuple_New(4);
+    PyObject *results = PyTuple_New(6);
     PyObject *wt = PyList_New(data_p);
     PyObject *auc = PyList_New(re->auc_len);
     PyObject *rts = PyList_New(re->auc_len);
