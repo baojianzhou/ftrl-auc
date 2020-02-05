@@ -1178,22 +1178,22 @@ void _algo_ftrl_auc_hybrid(Data *data,
             // gradient descent
             cblas_daxpy(data->p, wei_nega, x_nega, 1, grad_wt, 1);
             cblas_daxpy(data->p, wei_posi, x_posi, 1, grad_wt, 1);
-            // lazy update the model and make prediction.
-            // to make a prediction of AUC score
-            for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                ni = gt_square[xt_inds[ii]];
-                re->wt[xt_inds[ii]] =
-                        fabs(zt[xt_inds[ii]]) <= para_l1 ?
-                        0.0 : -(zt[xt_inds[ii]] - sign(zt[xt_inds[ii]]) * para_l1)
-                              / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
+            double tmp;
+            for (int ii = 0; ii < data->p; ii++) {
+                ni = gt_square[ii];
+                pow_gt = pow(grad_wt[ii], 2.);
+                lr = (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
+                tmp = re->wt[ii] - lr * grad_wt[ii];
+                double tmp_sign = (double) sign(tmp);
+                re->wt[ii] = tmp_sign * fmax(0.0, fabs(tmp) - lr * para_l1);
             }
             // update the learning rate and gradient
             for (int ii = 0; ii < data->x_lens[ind]; ii++) {
-                grad_wt[xt_inds[ii]] = weight * xt_vals[ii];
+                gt[xt_inds[ii]] = weight * xt_vals[ii];
                 ni = gt_square[xt_inds[ii]];
-                pow_gt = pow(grad_wt[xt_inds[ii]], 2.);
+                pow_gt = pow(gt[xt_inds[ii]], 2.);
                 lr = (sqrt(ni + pow_gt) - sqrt(ni)) / para_gamma;
-                zt[xt_inds[ii]] += grad_wt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
+                zt[xt_inds[ii]] += gt[xt_inds[ii]] - lr * re->wt[xt_inds[ii]];
                 gt_square[xt_inds[ii]] += pow_gt;
             }
         } else {
@@ -1261,6 +1261,7 @@ void _algo_ftrl_auc_hybrid(Data *data,
     free(x_posi);
     free(gt);
     free(zt);
+    free(grad_wt);
     free(gt_square);
 }
 

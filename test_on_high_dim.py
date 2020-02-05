@@ -74,7 +74,7 @@ def cv_ftrl_auc_hybrid(input_para):
     for para_gamma, para_l1 in product(
             [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
             [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
-        para_l2, para_beta, para_k = 0.0, 1.0, 100
+        para_l2, para_beta, para_k = 0.0, 1.0, 500
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc_hybrid(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
@@ -85,7 +85,7 @@ def cv_ftrl_auc_hybrid(input_para):
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
             best_auc, para = va_auc, (para_gamma, para_l1, para_l2, para_beta)
-    para_l2, para_beta, verbose, eval_step, record_aucs, para_k = 0.0, 1.0, 0, 100, 1, 100
+    para_l2, para_beta, verbose, eval_step, record_aucs, para_k = 0.0, 1.0, 0, 100, 1, 500
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_gamma, para_l1, para_l2, para_beta = para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc_hybrid(
@@ -363,7 +363,7 @@ def run_high_dimensional(method, dataset, num_cpus):
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_auc':
         ms_res = pool.map(cv_ftrl_auc, para_space)
-    if method == 'ftrl_auc_hybrid':
+    elif method == 'ftrl_auc_hybrid':
         ms_res = pool.map(cv_ftrl_auc_hybrid, para_space)
     elif method == 'spauc':
         ms_res = pool.map(cv_spauc, para_space)
@@ -659,11 +659,11 @@ def show_auc_curves(dataset):
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
     plt.rcParams["font.size"] = 11
     rcParams['figure.figsize'] = 8, 4
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_auc_hybrid']
+    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-AUC-Hy']
     prop_cycle = plt.rcParams['axes.prop_cycle']
-    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v']
-    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(1, 2)
     num_trials = 10
     for ind, method in enumerate(list_methods):
