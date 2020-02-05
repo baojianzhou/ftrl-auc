@@ -1047,15 +1047,20 @@ void _algo_ftrl_auc(Data *data,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    printf("\n-------------------------------------------------------\n");
-    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
-           data->p, data->n_tr, data->n_va, data->n_te);
-    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
-           run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
-    printf("para_l1: %.4f para_gamma: %.4f sparse_ratio: %.4f\n",
+    if(paras->verbose >0){
+        printf("\n-------------------------------------------------------\n");
+        printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+               data->p, data->n_tr, data->n_va, data->n_te);
+        printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+               run_time, eval_time, total_time);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+        printf("para_l1: %.4f para_gamma: %.4f sparse_ratio: %.4f\n",
+               para_l1, para_gamma, re->sparse_ratio);
+        printf("\n-------------------------------------------------------\n");
+    }
+    printf("para_l1: %.4e para_gamma: %.4e sparse_ratio: %.4e ",
            para_l1, para_gamma, re->sparse_ratio);
-    printf("\n-------------------------------------------------------\n");
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     free(x_nega);
     free(x_posi);
     free(gt);
