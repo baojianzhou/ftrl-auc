@@ -333,7 +333,7 @@ def cv_rda_l1(input_para):
     # lambda: to control the sparsity
     lambda_list = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]
     # gamma: to control the learning rate. (it cannot be too small)
-    gamma_list = [1e3, 5e3, 1e4]
+    gamma_list = [1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
     # rho: to control the sparsity-enhancing parameter.
     rho_list = [0.0, 5e-3]
     for para_lambda, para_gamma, para_rho in product(lambda_list, gamma_list, rho_list):
@@ -627,6 +627,8 @@ def show_auc_curves(dataset):
     rcParams['figure.figsize'] = 4, 4
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
+    list_methods = ['ftrl_fast', 'rda_l1', 'ftrl_proximal']
+    label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal']
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)

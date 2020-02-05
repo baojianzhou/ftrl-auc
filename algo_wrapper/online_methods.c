@@ -924,12 +924,12 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
 
 
 void _algo_ftrl_auc(Data *data,
-                         GlobalParas *paras,
-                         AlgoResults *re,
-                         double para_l1,
-                         double para_l2,
-                         double para_beta,
-                         double para_gamma) {
+                    GlobalParas *paras,
+                    AlgoResults *re,
+                    double para_l1,
+                    double para_l2,
+                    double para_beta,
+                    double para_gamma) {
 
     clock_t start_time = clock();
     openblas_set_num_threads(1);
@@ -1186,15 +1186,20 @@ void _algo_rda_l1(Data *data,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    printf("\n-------------------------------------------------------\n");
-    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
-           data->p, data->n_tr, data->n_va, data->n_te);
-    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
-           run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
-    printf("para_lambda: %.4f para_gamma: %.4f para_rho: %.4f sparse_ratio: %.4f\n",
-           para_lambda, para_gamma, para_rho, re->sparse_ratio);
-    printf("\n-------------------------------------------------------\n");
+    if (paras->verbose > 0) {
+        printf("\n-------------------------------------------------------\n");
+        printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+               data->p, data->n_tr, data->n_va, data->n_te);
+        printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+               run_time, eval_time, total_time);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+        printf("para_lambda: %.4f para_gamma: %.4f para_rho: %.4f sparse_ratio: %.4f\n",
+               para_lambda, para_gamma, para_rho, re->sparse_ratio);
+        printf("\n-------------------------------------------------------\n");
+    }
+    printf("para_lambda: %.4e para_gamma: %.4e para_rho: %.4e",
+           para_lambda, para_gamma, para_rho);
+    printf(" va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     free(gt);
     free(gt_bar);
 }
