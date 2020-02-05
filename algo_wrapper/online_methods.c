@@ -1231,14 +1231,14 @@ void _algo_adagrad(Data *data,
         weight = -(data->y[ind]) * expit(-z0);
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
             gt[xt_inds[ii]] = weight * xt_vals[ii];
-            gt_square[xt_inds[ii]] = gt[xt_inds[ii]] * gt[xt_inds[ii]];
+            gt_square[xt_inds[ii]] += gt[xt_inds[ii]] * gt[xt_inds[ii]];
         }
         // calculate the gradient of intercept
         gt[data->p] = weight;
+        gt_square[data->p] += weight * weight;
         // 3.   compute the dual average.
         cblas_dscal(data->p + 1, tt / (tt + 1.), gt_bar, 1);
         cblas_daxpy(data->p + 1, 1. / (tt + 1.), gt, 1, gt_bar, 1);
-
         // 4.   update the model: enhanced l1-rda method. Equation (30)
         for (int i = 0; i < data->p; i++) {
             double wei = sign(-gt_bar[i]) * para_eta * (tt + 1.) / (para_epsilon + sqrt(gt_square[i]));
