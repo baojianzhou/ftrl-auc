@@ -141,7 +141,7 @@ static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_xi, para_l1, para_l2; //SPAM has three parameters.
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!ddd",
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!ddd",
                           &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
                           &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
                           &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,

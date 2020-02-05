@@ -491,7 +491,7 @@ void _algo_spauc(Data *data,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    if(paras->verbose >0){
+    if (paras->verbose > 0) {
         printf("\n-------------------------------------------------------\n");
         printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
                data->p, data->n_tr, data->n_va, data->n_te);
@@ -625,15 +625,20 @@ bool _algo_solam(
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    printf("\n-------------------------------------------------------\n");
-    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
-           data->p, data->n_tr, data->n_va, data->n_te);
-    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
-           run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
-    printf("para_xi: %.4f para_r: %.4f sparse_ratio: %.4f\n",
+    if (paras->verbose > 0) {
+        printf("\n-------------------------------------------------------\n");
+        printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+               data->p, data->n_tr, data->n_va, data->n_te);
+        printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+               run_time, eval_time, total_time);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+        printf("para_xi: %.4f para_r: %.4f sparse_ratio: %.4f\n",
+               para_xi, para_r, re->sparse_ratio);
+        printf("\n-------------------------------------------------------\n");
+    }
+    printf("para_xi: %.4e para_r: %.4e sparse_ratio: %.4e ",
            para_xi, para_r, re->sparse_ratio);
-    printf("\n-------------------------------------------------------\n");
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     free(v_bar_prev);
     free(v_bar);
     free(grad_v);
@@ -758,15 +763,20 @@ void _algo_spam(Data *data,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    printf("\n-------------------------------------------------------\n");
-    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
-           data->p, data->n_tr, data->n_va, data->n_te);
-    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
-           run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
-    printf("para_xi: %.4f para_l1: %.4f para_l2: %.4f sparse_ratio: %.4f\n",
+    if(paras->verbose >0){
+        printf("\n-------------------------------------------------------\n");
+        printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+               data->p, data->n_tr, data->n_va, data->n_te);
+        printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+               run_time, eval_time, total_time);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+        printf("para_xi: %.4f para_l1: %.4f para_l2: %.4f sparse_ratio: %.4f\n",
+               para_xi, para_l1, para_l2, re->sparse_ratio);
+        printf("\n-------------------------------------------------------\n");
+    }
+    printf("para_xi: %.4e para_l1: %.4e para_l2: %.4e sparse_ratio: %.4e ",
            para_xi, para_l1, para_l2, re->sparse_ratio);
-    printf("\n-------------------------------------------------------\n");
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     free(y_pred);
     free(nega_x);
     free(posi_x);
@@ -932,7 +942,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    if(paras->verbose > 0){
+    if (paras->verbose > 0) {
         printf("\n-------------------------------------------------------\n");
         printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
                data->p, data->n_tr, data->n_va, data->n_te);
@@ -1057,7 +1067,7 @@ void _algo_ftrl_auc(Data *data,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    if(paras->verbose >0){
+    if (paras->verbose > 0) {
         printf("\n-------------------------------------------------------\n");
         printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
                data->p, data->n_tr, data->n_va, data->n_te);
