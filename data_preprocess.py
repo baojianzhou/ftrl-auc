@@ -450,7 +450,7 @@ def data_process_04_webspam_u(num_trials=10):
             https://www.cc.gatech.edu/projects/doi/WebbSpamCorpus.html
     :return:
     """
-    np.random.seed(int(time.time()))
+    np.random.seed(17)
     data = {'file_path': root_path + '04_webspam_u/raw_webspam_u',
             'data_name': '04_webspam_u',
             'x_tr_vals': [],
@@ -513,8 +513,8 @@ def data_process_04_webspam_u(num_trials=10):
     pkl.dump(data, open(os.path.join(root_path, '04_webspam_u/processed_04_webspam_u.pkl'), 'wb'))
 
 
-def data_process_05_rcv1_binary(num_trials=10):
-    np.random.seed(int(time.time()))
+def data_process_05_rcv1_bin(num_trials=10):
+    np.random.seed(17)
     data = {'file_path': root_path + '05_rcv1_bin/raw_rcv1_bin',
             'data_name': '05_rcv1_bin',
             'x_tr_vals': [],
@@ -577,7 +577,8 @@ def data_process_05_rcv1_binary(num_trials=10):
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
         assert data['n'] == (n_tr + n_va + n_te)
-    pkl.dump(data, open(os.path.join(root_path, '05_rcv1_bin/processed_05_rcv1_bin.pkl'), 'wb'))
+    sys.stdout.flush()
+    return data
 
 
 def data_process_06_pcmac(num_trials=10):

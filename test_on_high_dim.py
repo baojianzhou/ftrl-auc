@@ -9,9 +9,10 @@ from itertools import product
 
 import numpy as np
 from data_preprocess import data_process_01_webspam
-from data_preprocess import data_process_04_avazu
-from data_preprocess import data_process_07_url
 from data_preprocess import data_process_03_realsim
+from data_preprocess import data_process_04_avazu
+from data_preprocess import data_process_05_rcv1_bin
+from data_preprocess import data_process_07_url
 from data_preprocess import data_process_08_farmads
 from data_preprocess import data_process_09_kdd2010
 
@@ -353,12 +354,14 @@ def cv_adagrad(input_para):
 def run_high_dimensional(method, dataset, num_cpus):
     if dataset == '01_webspam':
         data = data_process_01_webspam()
+    elif dataset == '03_real_sim':
+        data = data_process_03_realsim()
+    elif dataset == '05_rcv1_bin':
+        data = data_process_05_rcv1_bin()
     elif dataset == '07_url':
         data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
-    elif dataset == '03_real_sim':
-        data = data_process_03_realsim()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
