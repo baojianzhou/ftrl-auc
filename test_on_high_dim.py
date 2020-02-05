@@ -441,7 +441,7 @@ def run_huge_dimensional(method, dataset, task_id):
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
     trial_i = int(task_id)
-    if method == 'ftrl_fast':
+    if method == 'ftrl_auc':
         ms_res = cv_ftrl_auc((data, trial_i))
     elif method == 'ftrl_proximal':
         ms_res = cv_ftrl_proximal((data, trial_i))
