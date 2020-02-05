@@ -32,13 +32,17 @@ PyObject *get_results(int data_p, AlgoResults *re) {
     PyObject *wt = PyList_New(data_p);
     PyObject *auc = PyList_New(re->auc_len);
     PyObject *rts = PyList_New(re->auc_len);
+    PyObject *iters = PyList_New(re->auc_len);
+    PyObject *online_aucs = PyList_New(re->auc_len);
     PyObject *metrics = PyList_New(7);
     for (int i = 0; i < data_p; i++) {
         PyList_SetItem(wt, i, PyFloat_FromDouble(re->wt[i]));
     }
     for (int i = 0; i < re->auc_len; i++) {
-        PyList_SetItem(auc, i, PyFloat_FromDouble(re->aucs[i]));
+        PyList_SetItem(auc, i, PyFloat_FromDouble(re->te_aucs[i]));
         PyList_SetItem(rts, i, PyFloat_FromDouble(re->rts[i]));
+        PyList_SetItem(iters, i, PyFloat_FromDouble(re->iters[i]));
+        PyList_SetItem(online_aucs, i, PyFloat_FromDouble(re->online_aucs[i]));
     }
     PyList_SetItem(metrics, 0, PyFloat_FromDouble(re->va_auc));
     PyList_SetItem(metrics, 1, PyFloat_FromDouble(re->te_auc));
@@ -50,7 +54,9 @@ PyObject *get_results(int data_p, AlgoResults *re) {
     PyTuple_SetItem(results, 0, wt);
     PyTuple_SetItem(results, 1, auc);
     PyTuple_SetItem(results, 2, rts);
-    PyTuple_SetItem(results, 3, metrics);
+    PyTuple_SetItem(results, 3, iters);
+    PyTuple_SetItem(results, 4, online_aucs);
+    PyTuple_SetItem(results, 5, metrics);
     return results;
 }
 
@@ -79,30 +85,6 @@ void init_global_paras(GlobalParas *paras, PyArrayObject *global_paras) {
     paras->record_aucs = (int) arr_paras[2];
 }
 
-static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
-    if (self != NULL) { printf("%zd", self->ob_refcnt); }
-    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
-    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
-    Data *data = malloc(sizeof(Data));
-    GlobalParas *paras = malloc(sizeof(GlobalParas));
-    double para_xi, para_r; //SOLAM has two parameters.
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dd",
-                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
-                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
-                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
-                          &data->is_sparse, &data->p, &PyArray_Type, &global_paras, &para_xi,
-                          &para_r)) { return NULL; }
-    init_global_paras(paras, global_paras);
-    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
-    AlgoResults *re = make_algo_results(data->p, data->n);
-    _algo_solam(data, paras, re, para_xi, para_r);
-    PyObject *results = get_results(data->p, re);
-    free_algo_results(re);
-    free(paras);
-    free(data);
-    return results;
-}
-
 
 static PyObject *wrap_algo_spauc(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
@@ -126,6 +108,31 @@ static PyObject *wrap_algo_spauc(PyObject *self, PyObject *args) {
     free(data);
     return results;
 }
+
+static PyObject *wrap_algo_solam(PyObject *self, PyObject *args) {
+    if (self != NULL) { printf("%zd", self->ob_refcnt); }
+    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
+    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
+    Data *data = malloc(sizeof(Data));
+    GlobalParas *paras = malloc(sizeof(GlobalParas));
+    double para_xi, para_r; //SOLAM has two parameters.
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!dd",
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
+                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
+                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
+                          &data->p, &PyArray_Type, &global_paras, &para_xi,
+                          &para_r)) { return NULL; }
+    init_global_paras(paras, global_paras);
+    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
+    AlgoResults *re = make_algo_results(data->p, data->n);
+    _algo_solam(data, paras, re, para_xi, para_r);
+    PyObject *results = get_results(data->p, re);
+    free_algo_results(re);
+    free(paras);
+    free(data);
+    return results;
+}
+
 
 static PyObject *wrap_algo_spam(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }

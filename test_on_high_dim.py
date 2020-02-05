@@ -8,8 +8,6 @@ from os.path import join
 from itertools import product
 
 import numpy as np
-from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import KFold
 from data_preprocess import data_process_01_webspam
 from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_07_url
@@ -37,75 +35,6 @@ except ImportError:
     print('cannot find the module: sparse_module')
 
 root_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/'
-
-
-def get_data_by_ind(data, tr_ind, sub_tr_ind):
-    sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens = [], [], [], []
-    prev_posi = 0
-    for index in tr_ind[sub_tr_ind]:
-        cur_len = data['x_tr_lens'][index]
-        cur_posi = data['x_tr_poss'][index]
-        sub_x_vals.extend(data['x_tr_vals'][cur_posi:cur_posi + cur_len])
-        sub_x_inds.extend(data['x_tr_inds'][cur_posi:cur_posi + cur_len])
-        sub_x_lens.append(cur_len)
-        sub_x_poss.append(prev_posi)
-        prev_posi += cur_len
-    sub_x_vals = np.asarray(sub_x_vals, dtype=float)
-    sub_x_inds = np.asarray(sub_x_inds, dtype=np.int32)
-    sub_x_poss = np.asarray(sub_x_poss, dtype=np.int32)
-    sub_x_lens = np.asarray(sub_x_lens, dtype=np.int32)
-    sub_y_tr = np.asarray(data['y_tr'][tr_ind[sub_tr_ind]], dtype=float)
-    return sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_tr
-
-
-def pred_auc(data, tr_index, sub_te_ind, wt):
-    if np.isnan(wt).any() or np.isinf(wt).any():  # not a valid score function.
-        return 0.0
-    sub_x_vals, sub_x_inds, sub_x_poss, sub_x_lens, sub_y_te = get_data_by_ind(data, tr_index, sub_te_ind)
-    y_pred_wt = np.zeros_like(sub_te_ind, dtype=float)
-    for i in range(len(sub_te_ind)):
-        cur_posi = sub_x_poss[i]
-        cur_len = sub_x_lens[i]
-        cur_x = sub_x_vals[cur_posi:cur_posi + cur_len]
-        cur_ind = sub_x_inds[cur_posi:cur_posi + cur_len]
-        y_pred_wt[i] = np.sum([cur_x[_] * wt[cur_ind[_]] for _ in range(cur_len)])
-    return roc_auc_score(y_true=sub_y_te, y_score=y_pred_wt)
-
-
-def cv_ftrl_01_webspam_whole():
-    verbose, record_aucs = 0, 0
-    data = data_process_01_webspam()
-    all_indices = np.arange(data['n'])
-    x_tr_indices = all_indices[:280000]
-    x_te_indices = all_indices[280000:]
-    for para_l2, para_beta, para_gamma, para_l1 in product(
-            [0.0], [1.], [1.0], np.asarray([0.05, 0.5, 1.0, 5., 10., 50., 100., 1000.]) / 280000.):
-        global_paras = np.asarray([verbose, record_aucs], dtype=float)
-        run_time = time.time()
-        wt, aucs, rts = c_algo_ftrl_proximal(
-            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'],
-            data['x_tr_lens'], np.asarray(data['y_tr'], dtype=float), x_tr_indices,
-            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-        print('run_time: %.4f nonzero-ratio: %.4f predicted-auc: %.4f' %
-              (time.time() - run_time, np.count_nonzero(wt) / float(data['p']),
-               pred_auc(data, all_indices, x_te_indices, wt)))
-        sys.stdout.flush()
-
-
-def show_figure():
-    data_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/01_webspam/'
-    import matplotlib.pyplot as plt
-    ms_res = pkl.load(open(data_path + 're_small.pkl'))
-    data = pkl.load(open(data_path + '01_webspam_10000.pkl'))
-    all_indices = np.arange(data['n'])
-    x_tr_indices = all_indices[:8000]
-    x_te_indices = all_indices[8000:]
-    results = dict()
-    for para_gamma, para_l1, wt, aucs, rts in ms_res:
-        auc = pred_auc(data, all_indices, x_te_indices, wt)
-        print(para_gamma, para_l1, auc)
-        results[(para_gamma, para_l1)] = auc
-    pkl.dump(results, open(data_path + 're_small_aucs.pkl', 'wb'))
 
 
 def cv_ftrl_auc(input_para):
@@ -196,11 +125,11 @@ def cv_solam(input_para):
     best_auc, para, cv_res = None, None, dict()
     for para_xi, para_r in product(np.arange(1, 101, 9, dtype=float), 10. ** np.arange(-1, 6, 1, dtype=float)):
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
-        wt, aucs, rts, metrics = c_algo_solam(
+        wt, aucs, rts, iters, online_aucs, metrics = c_algo_solam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            1, data['p'], global_paras, para_xi, para_r)
+            data['p'], global_paras, para_xi, para_r)
         cv_res[(trial_i, para_xi, para_r)] = metrics
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
@@ -208,12 +137,12 @@ def cv_solam(input_para):
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_xi, para_r = para
-    wt, aucs, rts, metrics = c_algo_solam(
+    wt, aucs, rts, iters, online_aucs, metrics = c_algo_solam(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
-        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        1, data['p'], global_paras, para_xi, para_r)
-    return trial_i, (para_xi, para_r), cv_res, wt, aucs, rts, metrics
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i]
+        , data['p'], global_paras, para_xi, para_r)
+    return trial_i, (para_xi, para_r), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_spam_l1(input_para):
@@ -625,7 +554,7 @@ def show_parameter_select(dataset):
     rcParams['figure.figsize'] = 4, 4
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
-    marker_list = ['s', 'D', 'o']
+    marker_list = ['s', 'D', 'o', 'H']
     list_methods = ['ftrl_auc', 'rda_l1', 'ftrl_proximal', 'adagrad']
     label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal', 'AdaGrad']
     num_trials = 10
@@ -692,16 +621,16 @@ def show_auc_curves(dataset):
     import matplotlib.pyplot as plt
     from matplotlib import rc
     from pylab import rcParams
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["font.serif"] = "Times"
-    plt.rcParams["font.size"] = 16
-    rc('text', usetex=True)
-    rcParams['figure.figsize'] = 4, 4
-    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
-    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
-    marker_list = ['s', 'D', 'o']
-    list_methods = ['ftrl_fast', 'rda_l1', 'ftrl_proximal']
-    label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal']
+    plt.rcParams['text.usetex'] = True
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 11
+    rcParams['figure.figsize'] = 8, 4
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v']
+    # list_methods = ['ftrl_fast', 'rda_l1', 'ftrl_proximal', 'adagrad']
+    # label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal', 'AdaGrad']
+    fig, ax = plt.subplots(1, 2)
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
@@ -710,13 +639,19 @@ def show_auc_curves(dataset):
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         xx = range(0, 1100, 50)
         xx.extend(range(1100, 11100, 500))
-        plt.plot(xx[:len(aucs)], aucs, marker=marker_list[ind], markersize=6., markerfacecolor='w',
-                 markeredgewidth=2., label=label_list[ind])
-    plt.ylabel('AUC')
-    plt.xlabel('Samples Seen')
-    plt.legend()
+        ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=2., markerfacecolor='w',
+                   markeredgewidth=1., label=label_list[ind])
+        ax[1].plot(xx[:len(aucs)], aucs, marker=marker_list[ind], markersize=2., markerfacecolor='w',
+                   markeredgewidth=1., label=label_list[ind])
+    ax[0].set_ylabel('AUC')
+    ax[0].set_xlabel('Run Time')
+    ax[1].set_ylabel('AUC')
+    ax[1].set_xlabel('Samples Seen')
+    ax[0].legend(loc='lower right', framealpha=1.,
+                 bbox_to_anchor=(1.0, 0.0), frameon=True, borderpad=0.1,
+                 labelspacing=0.1, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
-    plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
 

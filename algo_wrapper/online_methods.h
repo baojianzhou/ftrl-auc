@@ -23,8 +23,12 @@
 typedef struct {
     double *wt;
     double *scores;
-    double *aucs;
+    double *te_aucs;
+    double *online_aucs;
     double *rts;
+    int *iters;
+    double *pred_scores;
+    double *true_labels;
     int auc_len; // how many auc evaluated.
     double run_time;
     double eval_time;

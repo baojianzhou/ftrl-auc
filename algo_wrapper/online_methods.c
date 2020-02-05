@@ -42,8 +42,12 @@ void _arg_sort_descend(const double *x, int *sorted_indices, int x_len) {
 AlgoResults *make_algo_results(int data_p, int total_num_eval) {
     AlgoResults *re = malloc(sizeof(AlgoResults));
     re->wt = calloc((size_t) data_p, sizeof(double));
-    re->aucs = calloc((size_t) total_num_eval, sizeof(double));
+    re->te_aucs = calloc((size_t) total_num_eval, sizeof(double));
+    re->online_aucs = calloc((size_t) total_num_eval, sizeof(double));
+    re->pred_scores = calloc((size_t) total_num_eval, sizeof(double));
+    re->true_labels = calloc((size_t) total_num_eval, sizeof(double));
     re->rts = calloc((size_t) total_num_eval, sizeof(double));
+    re->iters = calloc((size_t) total_num_eval, sizeof(int));
     re->scores = calloc((size_t) total_num_eval, sizeof(double));
     re->auc_len = 0;
     return re;
@@ -51,7 +55,11 @@ AlgoResults *make_algo_results(int data_p, int total_num_eval) {
 
 bool free_algo_results(AlgoResults *re) {
     free(re->rts);
-    free(re->aucs);
+    free(re->pred_scores);
+    free(re->true_labels);
+    free(re->online_aucs);
+    free(re->iters);
+    free(re->te_aucs);
     free(re->wt);
     free(re->scores);
     free(re);
@@ -308,7 +316,7 @@ void _evaluate_aucs(Data *data, double *y_pred, AlgoResults *re, double start_ti
         cblas_dgemv(CblasRowMajor, CblasNoTrans, data->n_tr, data->p, 1.,
                     data->x_vals, data->p, re->wt, 1, 0.0, y_pred, 1);
     }
-    re->aucs[re->auc_len] = _auc_score(data->y, y_pred, data->n_tr);
+    re->te_aucs[re->auc_len] = _auc_score(data->y, y_pred, data->n_tr);
     re->rts[re->auc_len++] = clock() - start_time - (clock() - t_eval);
 }
 
@@ -419,6 +427,9 @@ void _algo_spauc(Data *data,
             // update b(wt)
             b_wt = cblas_ddot(data->p, re->wt, 1, nega_x, 1) / nega_t;
         }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         double wei_x, wei_posi, wei_nega;
         if (data->y[ind] > 0) {
             wei_x = 2. * (1. - prob_p) * (xtw - a_wt);
@@ -456,15 +467,17 @@ void _algo_spauc(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
@@ -579,15 +592,16 @@ bool _algo_solam(
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
@@ -707,15 +721,16 @@ void _algo_spam(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
@@ -853,15 +868,16 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
                 if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                     double start_eval = clock();
                     memcpy(re->wt, v_ave, sizeof(double) * data->p);
-                    re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                    re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                     double end_eval = clock();
                     // this may not be very accurate.
                     eval_time += end_eval - start_eval;
                     run_time = (end_eval - start_time) - eval_time;
+                    re->iters[re->auc_len] = tt;
                     re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                     if (paras->verbose > 0) {
                         printf("tt: %d auc: %.4f n_va:%d\n",
-                               tt, re->aucs[re->auc_len - 1], data->n_va);
+                               tt, re->te_aucs[re->auc_len - 1], data->n_va);
                     }
                 }
             }
@@ -991,15 +1007,16 @@ void _algo_ftrl_auc(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
@@ -1081,15 +1098,16 @@ void _algo_ftrl_proximal(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
@@ -1164,15 +1182,16 @@ void _algo_rda_l1(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
@@ -1252,15 +1271,16 @@ void _algo_adagrad(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
-                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
                 eval_time += end_eval - start_eval;
                 run_time = (end_eval - start_time) - eval_time;
+                re->iters[re->auc_len] = tt;
                 re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
                 if (paras->verbose > 0) {
                     printf("tt: %d auc: %.4f n_va:%d\n",
-                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                           tt, re->te_aucs[re->auc_len - 1], data->n_va);
                 }
             }
         }
