@@ -364,7 +364,7 @@ def cv_adagrad(input_para):
     # lambda: to control the sparsity
     lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
     # eta: to control the learning rate. (it cannot be too small)
-    eta_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
+    eta_list = [1e-3, 1e-2, 1e-1, 1e0, 1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
     epsilon_list = [1e-8]
     for para_lambda, para_eta, para_epsilon in product(lambda_list, eta_list, epsilon_list):
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
