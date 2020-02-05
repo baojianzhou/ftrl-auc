@@ -164,7 +164,7 @@ static PyObject *wrap_algo_fsauc(PyObject *self, PyObject *args) {
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
     double para_r, para_g;
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dd",
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!dd",
                           &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
                           &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
                           &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,

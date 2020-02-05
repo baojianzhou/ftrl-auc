@@ -787,7 +787,6 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     double *m_neg = calloc((size_t) data->p, sizeof(double));
     int m = (int) floor(0.5 * log2(2 * n_ids / log2(n_ids))) - 1;
     int n_0 = (int) floor(n_ids / m);
-    printf("m: %d n_0: %d", m, n_0);
     para_r = 2. * sqrt(3.) * R;
     double p_hat = 0.0;
     double beta = 9.0;
@@ -928,15 +927,21 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    printf("\n-------------------------------------------------------\n");
-    printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
-           data->p, data->n_tr, data->n_va, data->n_te);
-    printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
-           run_time, eval_time, total_time);
-    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
-    printf("para_g: %.4f para_r: %.4f sparse_ratio: %.4f\n",
+    if(paras->verbose > 0){
+        printf("\n-------------------------------------------------------\n");
+        printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+               data->p, data->n_tr, data->n_va, data->n_te);
+        printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+               run_time, eval_time, total_time);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+        printf("para_g: %.4f para_r: %.4f sparse_ratio: %.4f\n",
+               para_g, para_r, re->sparse_ratio);
+        printf("\n-------------------------------------------------------\n");
+    }
+
+    printf("para_g: %.4e para_r: %.4e sparse_ratio: %.4e ",
            para_g, para_r, re->sparse_ratio);
-    printf("\n-------------------------------------------------------\n");
+    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     free(y_pred);
     free(tmp_proj);
     free(vd);
