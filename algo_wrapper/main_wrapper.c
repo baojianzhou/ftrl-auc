@@ -254,17 +254,16 @@ static PyObject *wrap_algo_adagrad(PyObject *self, PyObject *args) {
     PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
     Data *data = malloc(sizeof(Data));
     GlobalParas *paras = malloc(sizeof(GlobalParas));
-    double para_l1, para_l2, para_beta, para_gamma;
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iiO!dddd",
+    double para_lambda, para_eta, para_epsilon;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!ddd",
                           &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss, &PyArray_Type,
                           &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices, &PyArray_Type, &tr_indices,
-                          &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
-                          &data->is_sparse, &data->p, &PyArray_Type, &global_paras,
-                          &para_l1, &para_l2, &para_beta, &para_gamma)) { return NULL; }
+                          &PyArray_Type, &va_indices, &PyArray_Type, &te_indices, &data->p, &PyArray_Type,
+                          &global_paras, &para_lambda, &para_eta, &para_epsilon)) { return NULL; }
     init_global_paras(paras, global_paras);
     init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
     AlgoResults *re = make_algo_results(data->p + 1, data->n);
-    _algo_ftrl_proximal(data, paras, re, para_l1, para_l2, para_beta, para_gamma);
+    _algo_adagrad(data, paras, re, para_lambda, para_eta, para_epsilon);
     PyObject *results = get_results(data->p + 1, re);
     free_algo_results(re);
     free(paras);

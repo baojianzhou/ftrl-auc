@@ -361,28 +361,31 @@ def cv_rda_l1(input_para):
 def cv_adagrad(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
-        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    # lambda: to control the sparsity
+    lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1]
+    # eta: to control the learning rate. (it cannot be too small)
+    eta_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
+    epsilon_list = [1e-8]
+    for para_lambda, para_eta, para_epsilon in product(lambda_list, eta_list, epsilon_list):
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
         wt, aucs, rts, metrics = c_algo_adagrad(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-        cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)] = metrics
+            data['p'], global_paras, para_lambda, para_eta, para_epsilon)
+        cv_res[(trial_i, para_lambda, para_eta, para_epsilon)] = metrics
         va_auc = metrics[0]
         if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_l1, para_l2, para_beta, para_gamma)
+            best_auc, para = va_auc, (para_lambda, para_eta, para_epsilon)
     verbose, eval_step, record_aucs = 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_l1, para_l2, para_beta, para_gamma = para
+    para_lambda, para_eta, para_epsilon = para
     wt, aucs, rts, metrics = c_algo_adagrad(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        1, data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-    return trial_i, para_l1, para_l2, para_beta, para_gamma, cv_res, wt, aucs, rts, metrics
+        data['p'], global_paras, para_lambda, para_eta, para_epsilon)
+    return trial_i, (para_lambda, para_eta, para_epsilon), cv_res, wt, aucs, rts, metrics
 
 
 def run_high_dimensional(method, dataset, num_cpus):
@@ -627,6 +630,7 @@ def show_auc_curves(dataset):
     rcParams['figure.figsize'] = 4, 4
     list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
+    marker_list = ['s', 'D', 'o']
     list_methods = ['ftrl_fast', 'rda_l1', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal']
     num_trials = 10
@@ -637,7 +641,10 @@ def show_auc_curves(dataset):
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         xx = range(0, 1100, 50)
         xx.extend(range(1100, 11100, 500))
-        plt.plot(xx[:len(aucs)], aucs, '-', label=label_list[ind])
+        plt.plot(xx[:len(aucs)], aucs, marker=marker_list[ind], markersize=6., markerfacecolor='w',
+                 markeredgewidth=2., label=label_list[ind])
+    plt.ylabel('AUC')
+    plt.xlabel('Samples Seen')
     plt.legend()
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')

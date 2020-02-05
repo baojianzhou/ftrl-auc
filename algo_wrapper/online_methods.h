@@ -175,6 +175,13 @@ void _algo_rda_l1(Data *data,
                   double para_gamma,
                   double para_rho);
 
+void _algo_adagrad(Data *data,
+                   GlobalParas *paras,
+                   AlgoResults *re,
+                   double para_lambda,
+                   double para_eta,
+                   double para_epsilon);
+
 void _algo_ftrl_proximal(Data *data,
                          GlobalParas *paras,
                          AlgoResults *re,

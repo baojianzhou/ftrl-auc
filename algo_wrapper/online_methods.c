@@ -1203,3 +1203,92 @@ void _algo_rda_l1(Data *data,
     free(gt);
     free(gt_bar);
 }
+
+
+void _algo_adagrad(Data *data,
+                   GlobalParas *paras,
+                   AlgoResults *re,
+                   double para_lambda,
+                   double para_eta,
+                   double para_epsilon) {
+    clock_t start_time = clock();
+    openblas_set_num_threads(1);
+    double *gt = calloc(data->p + 1, sizeof(double));
+    double *gt_bar = calloc(data->p + 1, sizeof(double));
+    double *gt_square = calloc(data->p + 1, sizeof(double));
+    double total_time, run_time, eval_time = 0.0;
+    for (int tt = 0; tt < data->n_tr; tt++) {
+        // 1. example x_i arrives and then we make prediction.
+        int ind = data->tr_indices[tt]; // the index of the current training example.
+        double weight;
+        double xtw = 0.0;
+        // receive a training sample.
+        const int *xt_inds = data->x_inds + data->x_poss[ind];
+        const double *xt_vals = data->x_vals + data->x_poss[ind];
+        // make a prediction
+        double z0 = (data->y[ind]) * (xtw + re->wt[data->p]);
+        // calculate the gradient of w
+        weight = -(data->y[ind]) * expit(-z0);
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            gt[xt_inds[ii]] = weight * xt_vals[ii];
+            gt_square[xt_inds[ii]] = gt[xt_inds[ii]] * gt[xt_inds[ii]];
+        }
+        // calculate the gradient of intercept
+        gt[data->p] = weight;
+        // 3.   compute the dual average.
+        cblas_dscal(data->p + 1, tt / (tt + 1.), gt_bar, 1);
+        cblas_daxpy(data->p + 1, 1. / (tt + 1.), gt, 1, gt_bar, 1);
+
+        // 4.   update the model: enhanced l1-rda method. Equation (30)
+        for (int i = 0; i < data->p; i++) {
+            double wei = sign(-gt_bar[i]) * para_eta * (tt + 1.) / (para_epsilon + sqrt(gt_square[i]));
+            double truncate = fmax(0.0, fabs(gt_bar[i]) - para_lambda);
+            re->wt[i] = wei * truncate;
+        }
+        double wei = sign(-gt_bar[data->p]) * para_eta * (tt + 1.) /
+                                            (para_epsilon + sqrt(gt_square[data->p]));
+        double truncate = fmax(0.0, fabs(gt_bar[data->p]));
+        re->wt[data->p] = wei * truncate;
+        if (paras->record_aucs == 1) {
+            if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
+                double start_eval = clock();
+                re->aucs[re->auc_len] = _eval_auc(data, re, false);
+                double end_eval = clock();
+                // this may not be very accurate.
+                eval_time += end_eval - start_eval;
+                run_time = (end_eval - start_time) - eval_time;
+                re->rts[re->auc_len++] = run_time / CLOCKS_PER_SEC;
+                if (paras->verbose > 0) {
+                    printf("tt: %d auc: %.4f n_va:%d\n",
+                           tt, re->aucs[re->auc_len - 1], data->n_va);
+                }
+            }
+        }
+    }
+    total_time = (double) (clock() - start_time) / CLOCKS_PER_SEC;
+    eval_time /= CLOCKS_PER_SEC;
+    run_time = total_time - eval_time;
+    re->run_time = run_time;
+    re->eval_time = eval_time;
+    re->total_time = total_time;
+    _cal_sparse_ratio(re, data->p);
+    re->va_auc = _eval_auc(data, re, true);
+    re->te_auc = _eval_auc(data, re, false);
+    if (paras->verbose > 0) {
+        printf("\n-------------------------------------------------------\n");
+        printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
+               data->p, data->n_tr, data->n_va, data->n_te);
+        printf("run_time: %.4f eval_time: %.4f total_time: %.4f\n",
+               run_time, eval_time, total_time);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+        printf("para_lambda: %.4f para_gamma: %.4f para_rho: %.4f sparse_ratio: %.4f\n",
+               para_lambda, para_eta, para_epsilon, re->sparse_ratio);
+        printf("\n-------------------------------------------------------\n");
+    }
+    printf("para_lambda: %.4e para_gamma: %.4e para_rho: %.4e",
+           para_lambda, para_eta, para_epsilon);
+    printf(" va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
+    free(gt);
+    free(gt_bar);
+    free(gt_square);
+}
