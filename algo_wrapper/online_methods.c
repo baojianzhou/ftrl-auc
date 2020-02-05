@@ -527,7 +527,7 @@ bool _algo_solam(
     double alpha, alpha_prev;
     double *grad_v;
     double is_p_yt, is_n_yt;
-    double vt_dot, wei_posi, wei_nega;
+    double vt_dot, wei_posi, wei_nega, xtw;
     double weight, grad_alpha, norm_v;
     double total_time, run_time, eval_time = 0.0;
     v = malloc(sizeof(double) * (data->p + 2));
@@ -551,13 +551,17 @@ bool _algo_solam(
         is_n_yt = is_nega(data->y[ind]);
         p_hat = (tt * p_hat + is_p_yt) / (tt + 1.); // update p_hat
         gamma = para_xi / sqrt(tt + 1.); // current learning rate
-        vt_dot = 0.0;
+        vt_dot = 0.0, xtw = 0.0;
         // calculate the gradient w
         memset(grad_v, 0, sizeof(double) * (data->p + 2));
         for (int kk = 0; kk < data->x_lens[ind]; kk++) {
             grad_v[xt_inds[kk]] = xt_vals[kk];
             vt_dot += (v_prev[xt_inds[kk]] * xt_vals[kk]);
+            xtw += re->wt[xt_inds[kk]] * xt_vals[kk];
         }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         wei_posi = 2. * (1. - p_hat) * (vt_dot - v_prev[data->p] - (1. + alpha_prev));
         wei_nega = 2. * p_hat * ((vt_dot - v_prev[data->p + 1]) + (1. + alpha_prev));
         weight = wei_posi * is_p_yt + wei_nega * is_n_yt;
@@ -592,6 +596,7 @@ bool _algo_solam(
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                 re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
@@ -678,6 +683,9 @@ void _algo_spam(Data *data,
             // update b(wt)
             b_wt = cblas_ddot(data->p, re->wt, 1, nega_x, 1) / nega_t;
         }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         double wei_x, wei_posi, wei_nega;
         if (data->y[ind] > 0) {
             wei_x = 2. * (1. - prob_p) * (xtw - 1. - b_wt);
@@ -721,6 +729,7 @@ void _algo_spam(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                 re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
@@ -824,6 +833,9 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
                     sx_neg[xt_inds[ii]] += xt_vals[ii];
                 }
             }
+            // make online prediction
+            re->pred_scores[tt] = xtw;
+            re->true_labels[tt] = data->y[ind];
             weight = (1. - p_hat) * (xtw - v[data->p] - 1. - alpha) * is_posi_y;
             weight += p_hat * (xtw - v[data->p + 1] + 1. + alpha) * is_nega_y;
             memset(gd, 0, sizeof(double) * data->p);
@@ -868,6 +880,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
                 if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                     double start_eval = clock();
                     memcpy(re->wt, v_ave, sizeof(double) * data->p);
+                    re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                     re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                     double end_eval = clock();
                     // this may not be very accurate.
@@ -986,6 +999,9 @@ void _algo_ftrl_auc(Data *data,
             vtw = (t_nega - 1.) * vtw / t_nega + xtw / t_nega;
             weight = 2. * prob_p * (xtw - utw + 1.0);
         }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         // lazy update the model and make prediction.
         // to make a prediction of AUC score
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
@@ -1007,6 +1023,7 @@ void _algo_ftrl_auc(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                 re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
@@ -1076,6 +1093,9 @@ void _algo_ftrl_proximal(Data *data,
                                   / ((para_beta + sqrt(ni)) / para_gamma + para_l2);
             xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
         }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         // make a prediction
         double z0 = (data->y[ind]) * (xtw + re->wt[data->p]), lr;
         // calculate the gradient of w
@@ -1098,6 +1118,7 @@ void _algo_ftrl_proximal(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                 re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
@@ -1154,6 +1175,9 @@ void _algo_rda_l1(Data *data,
         // receive a training sample.
         const int *xt_inds = data->x_inds + data->x_poss[ind];
         const double *xt_vals = data->x_vals + data->x_poss[ind];
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+        }
         // make a prediction
         double z0 = (data->y[ind]) * (xtw + re->wt[data->p]);
         // calculate the gradient of w
@@ -1161,6 +1185,9 @@ void _algo_rda_l1(Data *data,
         for (int ii = 0; ii < data->x_lens[ind]; ii++) {
             gt[xt_inds[ii]] = weight * xt_vals[ii];
         }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         // calculate the gradient of intercept
         gt[data->p] = weight;
         // 3.   compute the dual average.
@@ -1182,6 +1209,7 @@ void _algo_rda_l1(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                 re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
@@ -1244,6 +1272,12 @@ void _algo_adagrad(Data *data,
         // receive a training sample.
         const int *xt_inds = data->x_inds + data->x_poss[ind];
         const double *xt_vals = data->x_vals + data->x_poss[ind];
+        for (int ii = 0; ii < data->x_lens[ind]; ii++) {
+            xtw += (re->wt[xt_inds[ii]] * xt_vals[ii]);
+        }
+        // make online prediction
+        re->pred_scores[tt] = xtw;
+        re->true_labels[tt] = data->y[ind];
         // make a prediction
         double z0 = (data->y[ind]) * (xtw + re->wt[data->p]);
         // calculate the gradient of w
@@ -1271,6 +1305,7 @@ void _algo_adagrad(Data *data,
         if (paras->record_aucs == 1) {
             if ((_check_step_size(tt) == 0) || (tt == (data->n_tr - 1))) {
                 double start_eval = clock();
+                re->online_aucs[re->auc_len] = _auc_score(re->true_labels, re->pred_scores, tt + 1);
                 re->te_aucs[re->auc_len] = _eval_auc(data, re, false);
                 double end_eval = clock();
                 // this may not be very accurate.
