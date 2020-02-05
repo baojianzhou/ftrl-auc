@@ -25,6 +25,7 @@ try:
         from sparse_module import c_algo_fsauc
         from sparse_module import c_algo_spauc
         from sparse_module import c_algo_ftrl_auc
+        from sparse_module import c_algo_ftrl_auc_hybrid
         from sparse_module import c_algo_ftrl_proximal
         from sparse_module import c_algo_rda_l1
         from sparse_module import c_algo_adagrad
@@ -62,6 +63,36 @@ def cv_ftrl_auc(input_para):
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
         data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+    print(para_gamma, para_l1, metrics[1])
+    sys.stdout.flush()
+    return trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics
+
+
+def cv_ftrl_auc_hybrid(input_para):
+    data, trial_i = input_para
+    best_auc, para, cv_res = None, None, dict()
+    for para_gamma, para_l1 in product(
+            [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
+            [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
+        para_l2, para_beta, para_k = 0.0, 1.0, 100
+        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+        wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc_hybrid(
+            data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+            data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+            data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+            data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma, para_k)
+        cv_res[(trial_i, para_gamma, para_l1)] = metrics
+        va_auc = metrics[0]
+        if best_auc is None or best_auc < va_auc:
+            best_auc, para = va_auc, (para_gamma, para_l1, para_l2, para_beta)
+    para_l2, para_beta, verbose, eval_step, record_aucs, para_k = 0.0, 1.0, 0, 100, 1, 100
+    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    para_gamma, para_l1, para_l2, para_beta = para
+    wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc_hybrid(
+        data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
+        data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma, para_k)
     print(para_gamma, para_l1, metrics[1])
     sys.stdout.flush()
     return trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics
@@ -332,6 +363,8 @@ def run_high_dimensional(method, dataset, num_cpus):
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_auc':
         ms_res = pool.map(cv_ftrl_auc, para_space)
+    if method == 'ftrl_auc_hybrid':
+        ms_res = pool.map(cv_ftrl_auc_hybrid, para_space)
     elif method == 'spauc':
         ms_res = pool.map(cv_spauc, para_space)
     elif method == 'fsauc':

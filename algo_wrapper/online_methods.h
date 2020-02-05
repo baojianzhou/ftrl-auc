@@ -172,6 +172,15 @@ void _algo_ftrl_auc(Data *data,
                     double para_beta,
                     double para_gamma);
 
+void _algo_ftrl_auc_hybrid(Data *data,
+                           GlobalParas *paras,
+                           AlgoResults *re,
+                           double para_l1,
+                           double para_l2,
+                           double para_beta,
+                           double para_gamma,
+                           int para_k);
+
 void _algo_rda_l1(Data *data,
                   GlobalParas *paras,
                   AlgoResults *re,

@@ -205,6 +205,32 @@ static PyObject *wrap_algo_ftrl_auc(PyObject *self, PyObject *args) {
     return results;
 }
 
+
+static PyObject *wrap_algo_ftrl_auc_hybrid(PyObject *self, PyObject *args) {
+    if (self != NULL) { printf("%zd", self->ob_refcnt); }
+    PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
+    PyArrayObject *indices, *tr_indices, *va_indices, *te_indices;
+    Data *data = malloc(sizeof(Data));
+    GlobalParas *paras = malloc(sizeof(GlobalParas));
+    double para_l1, para_l2, para_beta, para_gamma;
+    int para_k;
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!iO!ddddi",
+                          &PyArray_Type, &x_vals, &PyArray_Type, &x_inds, &PyArray_Type, &x_poss,
+                          &PyArray_Type, &x_lens, &PyArray_Type, &y, &PyArray_Type, &indices,
+                          &PyArray_Type, &tr_indices, &PyArray_Type, &va_indices, &PyArray_Type, &te_indices,
+                          &data->p, &PyArray_Type, &global_paras,
+                          &para_l1, &para_l2, &para_beta, &para_gamma, &para_k)) { return NULL; }
+    init_global_paras(paras, global_paras);
+    init_data(data, x_vals, x_inds, x_poss, x_lens, y, indices, tr_indices, va_indices, te_indices);
+    AlgoResults *re = make_algo_results(data->p, data->n);
+    _algo_ftrl_auc_hybrid(data, paras, re, para_l1, para_l2, para_beta, para_gamma, para_k);
+    PyObject *results = get_results(data->p, re);
+    free_algo_results(re);
+    free(paras);
+    free(data);
+    return results;
+}
+
 static PyObject *wrap_algo_ftrl_proximal(PyObject *self, PyObject *args) {
     if (self != NULL) { printf("%zd", self->ob_refcnt); }
     PyArrayObject *x_vals, *x_inds, *x_poss, *x_lens, *y, *global_paras;
@@ -280,15 +306,16 @@ static PyObject *wrap_algo_adagrad(PyObject *self, PyObject *args) {
 
 // wrap_algo_solam_sparse
 static PyMethodDef sparse_methods[] = { // hello_name
-        {"c_test",               test,                    METH_VARARGS, "docs"},
-        {"c_algo_solam",         wrap_algo_solam,         METH_VARARGS, "docs"},
-        {"c_algo_spauc",         wrap_algo_spauc,         METH_VARARGS, "docs"},
-        {"c_algo_spam",          wrap_algo_spam,          METH_VARARGS, "docs"},
-        {"c_algo_ftrl_auc",      wrap_algo_ftrl_auc,      METH_VARARGS, "docs"},
-        {"c_algo_fsauc",         wrap_algo_fsauc,         METH_VARARGS, "docs"},
-        {"c_algo_ftrl_proximal", wrap_algo_ftrl_proximal, METH_VARARGS, "docs"},
-        {"c_algo_rda_l1",        wrap_algo_rda_l1,        METH_VARARGS, "docs"},
-        {"c_algo_adagrad",       wrap_algo_adagrad,       METH_VARARGS, "docs"},
+        {"c_test",                 test,                      METH_VARARGS, "docs"},
+        {"c_algo_solam",           wrap_algo_solam,           METH_VARARGS, "docs"},
+        {"c_algo_spauc",           wrap_algo_spauc,           METH_VARARGS, "docs"},
+        {"c_algo_spam",            wrap_algo_spam,            METH_VARARGS, "docs"},
+        {"c_algo_ftrl_auc_hybrid", wrap_algo_ftrl_auc_hybrid, METH_VARARGS, "docs"},
+        {"c_algo_ftrl_auc",        wrap_algo_ftrl_auc,        METH_VARARGS, "docs"},
+        {"c_algo_fsauc",           wrap_algo_fsauc,           METH_VARARGS, "docs"},
+        {"c_algo_ftrl_proximal",   wrap_algo_ftrl_proximal,   METH_VARARGS, "docs"},
+        {"c_algo_rda_l1",          wrap_algo_rda_l1,          METH_VARARGS, "docs"},
+        {"c_algo_adagrad",         wrap_algo_adagrad,         METH_VARARGS, "docs"},
         {NULL, NULL, 0, NULL}};
 
 
