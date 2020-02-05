@@ -302,7 +302,7 @@ def cv_ftrl_proximal(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-                                       [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
+                                       [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
         para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
         global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
         wt, aucs, rts, metrics = c_algo_ftrl_proximal(
@@ -362,7 +362,7 @@ def cv_adagrad(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     # lambda: to control the sparsity
-    lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1]
+    lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
     # eta: to control the learning rate. (it cannot be too small)
     eta_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0, 1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
     epsilon_list = [1e-8]
@@ -626,8 +626,8 @@ def show_parameter_select(dataset):
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
     marker_list = ['s', 'D', 'o']
-    list_methods = ['ftrl_auc', 'rda_l1', 'ftrl_proximal']
-    label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal']
+    list_methods = ['ftrl_auc', 'rda_l1', 'ftrl_proximal', 'adagrad']
+    label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal', 'AdaGrad']
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
@@ -645,7 +645,7 @@ def show_parameter_select(dataset):
             yy = np.mean(sparse_ratio_mat, axis=0)
             plt.plot(xx, yy, marker='s', label='FTRL-FAST')
         elif method == 'rda_l1':
-            lambda_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+            lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(lambda_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(lambda_list)))
             for result in results:
@@ -657,7 +657,7 @@ def show_parameter_select(dataset):
             yy = np.mean(sparse_ratio_mat, axis=0)
             plt.plot(xx, yy, marker='D', label='RDA-L1')
         elif method == 'ftrl_proximal':
-            para_l1_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+            para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
             for result in results:
@@ -668,6 +668,18 @@ def show_parameter_select(dataset):
             xx = np.mean(auc_matrix, axis=0)
             yy = np.mean(sparse_ratio_mat, axis=0)
             plt.plot(xx, yy, marker='o', label='FTRL-Proximal')
+        elif method == 'adagrad':
+            lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(lambda_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(lambda_list)))
+            for result in results:
+                trial_i, (para_lambda, para_eta, para_epsilon), cv_res, wt, aucs, rts, metrics = result
+                for ind_l1, para_lambda in enumerate(lambda_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_eta, para_epsilon)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_eta, para_epsilon)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            plt.plot(xx, yy, marker='o', label='AdaGrad')
     plt.ylabel('Sparse-Ratio')
     plt.xlabel('AUC')
     plt.legend()
