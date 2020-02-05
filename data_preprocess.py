@@ -230,7 +230,7 @@ def data_process_02_news20b(num_trials=10):
     URL: https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html
     :return:
     """
-    np.random.seed(int(time.time()))
+    np.random.seed(17)
     data = {'file_path': root_path + '02_news20b/raw_news20b',
             'data_name': '02_news20b',
             'x_tr_vals': [],
@@ -289,7 +289,7 @@ def data_process_02_news20b(num_trials=10):
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
         assert data['n'] == (n_tr + n_va + n_te)
-    pkl.dump(data, open(os.path.join(root_path, '02_news20b/processed_02_news20b.pkl'), 'wb'))
+    return data
 
 
 def data_process_03_realsim(num_trials=10):

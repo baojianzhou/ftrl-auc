@@ -9,6 +9,7 @@ from itertools import product
 
 import numpy as np
 from data_preprocess import data_process_01_webspam
+from data_preprocess import data_process_02_news20b
 from data_preprocess import data_process_03_realsim
 from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_05_rcv1_bin
@@ -354,6 +355,8 @@ def cv_adagrad(input_para):
 def run_high_dimensional(method, dataset, num_cpus):
     if dataset == '01_webspam':
         data = data_process_01_webspam()
+    elif dataset == '02_news20b':
+        data = data_process_02_news20b()
     elif dataset == '03_real_sim':
         data = data_process_03_realsim()
     elif dataset == '05_rcv1_bin':
