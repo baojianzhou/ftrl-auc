@@ -27,7 +27,6 @@ try:
         from sparse_module import c_algo_fsauc
         from sparse_module import c_algo_spauc
         from sparse_module import c_algo_ftrl_auc
-        from sparse_module import c_algo_ftrl_auc_fast
         from sparse_module import c_algo_ftrl_proximal
         from sparse_module import c_algo_rda_l1
         from sparse_module import c_algo_adagrad
@@ -109,14 +108,14 @@ def show_figure():
     pkl.dump(results, open(data_path + 're_small_aucs.pkl', 'wb'))
 
 
-def cv_ftrl_fast(input_para):
+def cv_ftrl_auc(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
                                        [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]):
         para_l2, para_beta = 0.0, 1.0
         global_paras = np.asarray([0, data['n'], 0], dtype=float)
-        wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
+        wt, aucs, rts, metrics = c_algo_ftrl_auc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
@@ -128,7 +127,7 @@ def cv_ftrl_fast(input_para):
     para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, 100, 1
     global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
     para_gamma, para_l1, para_l2, para_beta = para
-    wt, aucs, rts, metrics = c_algo_ftrl_auc_fast(
+    wt, aucs, rts, metrics = c_algo_ftrl_auc(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
@@ -355,7 +354,7 @@ def cv_rda_l1(input_para):
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        1, data['p'], global_paras, para_lambda, para_gamma, para_rho, para_gamma)
+        data['p'], global_paras, para_lambda, para_gamma, para_rho)
     return trial_i, (para_lambda, para_gamma, para_rho), cv_res, wt, aucs, rts, metrics
 
 
@@ -399,7 +398,7 @@ def run_high_dimensional(method, dataset, num_cpus):
     para_space = [(data, trial_i) for trial_i in range(10)]
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_fast':
-        ms_res = pool.map(cv_ftrl_fast, para_space)
+        ms_res = pool.map(cv_ftrl_auc, para_space)
     elif method == 'spauc':
         ms_res = pool.map(cv_spauc, para_space)
     elif method == 'fsauc':
@@ -440,7 +439,7 @@ def run_huge_dimensional(method, dataset, task_id):
         data = pkl.load(open(f_name))
     trial_i = int(task_id)
     if method == 'ftrl_fast':
-        ms_res = cv_ftrl_fast((data, trial_i))
+        ms_res = cv_ftrl_auc((data, trial_i))
     elif method == 'ftrl_proximal':
         ms_res = cv_ftrl_proximal((data, trial_i))
     else:

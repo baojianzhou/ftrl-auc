@@ -923,7 +923,7 @@ void _algo_fsauc(Data *data, GlobalParas *paras, AlgoResults *re, double para_r,
 }
 
 
-void _algo_ftrl_auc_fast(Data *data,
+void _algo_ftrl_auc(Data *data,
                          GlobalParas *paras,
                          AlgoResults *re,
                          double para_l1,
