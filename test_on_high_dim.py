@@ -331,7 +331,7 @@ def cv_rda_l1(input_para):
     data, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
     # lambda: to control the sparsity
-    lambda_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+    lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
     # gamma: to control the learning rate. (it cannot be too small)
     gamma_list = [1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
     # rho: to control the sparsity-enhancing parameter.
@@ -447,14 +447,13 @@ def run_huge_dimensional(method, dataset, task_id):
         ms_res = cv_ftrl_proximal((data, trial_i))
     else:
         ms_res = None
-    f_name = root_path + '%s/re_%s_%s_%d.pkl' % \
-             (dataset, dataset, method, task_id)
+    f_name = root_path + '%s/re_%s_%s_%d.pkl' % (dataset, dataset, method, task_id)
     pkl.dump(ms_res, open(f_name, 'wb'))
 
 
 def result_statistics(dataset):
     aucs = []
-    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -624,17 +623,17 @@ def show_parameter_select(dataset):
     plt.rcParams["font.size"] = 16
     rc('text', usetex=True)
     rcParams['figure.figsize'] = 4, 4
-    list_methods = ['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'SOLAM', 'SPAUC', 'FSAUC', 'FTRL-Proximal']
     marker_list = ['s', 'D', 'o']
-    list_methods = ['ftrl_fast', 'rda_l1', 'ftrl_proximal']
+    list_methods = ['ftrl_auc', 'rda_l1', 'ftrl_proximal']
     label_list = ['FTRL-AUC', 'RDA-L1', 'FTRL-Proximal']
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
-        if method == 'ftrl_fast':
-            para_l1_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+        if method == 'ftrl_auc':
+            para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
             for result in results:
@@ -646,7 +645,7 @@ def show_parameter_select(dataset):
             yy = np.mean(sparse_ratio_mat, axis=0)
             plt.plot(xx, yy, marker='s', label='FTRL-FAST')
         elif method == 'rda_l1':
-            lambda_list = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0]
+            lambda_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(lambda_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(lambda_list)))
             for result in results:
