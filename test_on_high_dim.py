@@ -344,7 +344,6 @@ def run_high_dimensional(method, dataset, num_cpus):
         para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                         1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
         para_space = [(data, para_xi_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
-        cv_spam_l1(para_space[0])
         ms_res = pool.map(cv_spam_l1, para_space)
     elif method == 'spam_l2':
         para_xi_list = list(10. ** np.arange(-3, 4, 1, dtype=float))
