@@ -170,12 +170,13 @@ def cv_solam(input_para):
 def cv_spam_l1(input_para):
     data, para_xi_list, para_l1_list, trial_i = input_para
     best_auc, best_para, cv_res = None, None, dict()
+    global_paras = np.asarray([0, data['n'], 0], dtype=float)
     for para_xi, para_l1 in product(para_xi_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_xi, para_l1, 0.0)
+            data['p'], global_paras, para_xi, para_l1, 0.0)
         cv_res[(trial_i, para_xi, para_l1)] = metrics
         if best_auc is None or best_auc < metrics[0]:  # va_auc
             best_auc, best_para = metrics[0], (para_xi, para_l1)
@@ -323,29 +324,30 @@ def run_high_dimensional(method, dataset, num_cpus):
         para_space = [(data, para_gamma_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_ftrl_auc_hybrid, para_space)
     elif method == 'spauc':
-        para_mu_list = 10. ** np.asarray([-7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5])
+        para_mu_list = list(10. ** np.asarray([-7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5]))
         para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                         1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
         para_space = [(data, para_mu_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_spauc, para_space)
     elif method == 'fsauc':
-        para_r_list = 10. ** np.arange(-1, 6, 1, dtype=float)
-        para_g_list = 2. ** np.arange(-10, 11, 1, dtype=float)
+        para_r_list = list(10. ** np.arange(-1, 6, 1, dtype=float))
+        para_g_list = list(2. ** np.arange(-10, 11, 1, dtype=float))
         para_space = [(data, para_r_list, para_g_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_fsauc, para_space)
     elif method == 'solam':
-        para_xi_list = np.arange(1, 101, 9, dtype=float)
-        para_r_list = 10. ** np.arange(-1, 6, 1, dtype=float)
+        para_xi_list = list(np.arange(1, 101, 9, dtype=float))
+        para_r_list = list(10. ** np.arange(-1, 6, 1, dtype=float))
         para_space = [(data, para_xi_list, para_r_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_solam, para_space)
     elif method == 'spam_l1':
-        para_xi_list = 10. ** np.arange(-3, 4, 1, dtype=float),
+        para_xi_list = list(10. ** np.arange(-3, 4, 1, dtype=float))
         para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                         1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
         para_space = [(data, para_xi_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
+        cv_spam_l1(para_space[0])
         ms_res = pool.map(cv_spam_l1, para_space)
     elif method == 'spam_l2':
-        para_xi_list = 10. ** np.arange(-3, 4, 1, dtype=float),
+        para_xi_list = list(10. ** np.arange(-3, 4, 1, dtype=float))
         para_l2_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                         1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
         para_space = [(data, para_xi_list, para_l2_list, trial_i) for trial_i in range(num_trials)]
