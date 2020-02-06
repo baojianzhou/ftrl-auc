@@ -429,6 +429,7 @@ def run_huge_dimensional(method, dataset, task_id):
 def result_statistics(dataset):
     aucs = []
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'solam', 'spauc', 'fsauc']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -599,6 +600,7 @@ def show_parameter_select(dataset):
     plt.rcParams["font.size"] = 14
     rcParams['figure.figsize'] = 8, 4
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spauc']
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
     marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
@@ -769,6 +771,7 @@ def show_auc_curves(dataset):
     plt.rcParams["font.size"] = 14
     rcParams['figure.figsize'] = 8, 4
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'solam', 'spauc', 'fsauc']
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
                   r'SOLAM', r'SPAUC', r'FSAUC']
