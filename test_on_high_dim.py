@@ -782,13 +782,15 @@ def show_auc_curves(dataset):
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
         online_aucs = np.mean(np.asarray([results[trial_i][7] for trial_i in range(num_trials)]), axis=0)
-        ax[0].plot(rts, online_aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
+        ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
-        ax[1].plot(iters, online_aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
+        ax[1].plot(iters, aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
     ax[0].set_ylabel('AUC')
     ax[0].set_xlabel('Run Time')
     ax[1].set_xlabel('Samples Seen')
+    # ax[0].set_xscale('log')
+    # ax[1].set_xscale('log')
     for i in range(2):
         ax[i].spines['right'].set_visible(False)
         ax[i].spines['top'].set_visible(False)
@@ -796,7 +798,7 @@ def show_auc_curves(dataset):
     ax[1].legend(fancybox=True, loc='lower right', framealpha=1.0,
                  bbox_to_anchor=(1.0, 0.0), frameon=False, borderpad=0.1,
                  labelspacing=0.2, handletextpad=0.1, markerfirst=True)
-    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-oline-%s.pdf' % dataset
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
     fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
