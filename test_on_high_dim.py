@@ -16,6 +16,7 @@ from data_preprocess import data_process_05_rcv1_bin
 from data_preprocess import data_process_07_url
 from data_preprocess import data_process_08_farmads
 from data_preprocess import data_process_09_kdd2010
+from data_preprocess import data_process_10_imdb
 
 try:
     sys.path.append(os.getcwd())
@@ -365,6 +366,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
+    elif dataset == '10_imdb':
+        data = data_process_10_imdb()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
