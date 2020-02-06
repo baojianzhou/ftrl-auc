@@ -42,365 +42,353 @@ except ImportError:
 root_path = '/network/rit/lab/ceashpc/bz383376/data/kdd20/'
 
 
+def get_from_spam_l2(dataset, num_trials):
+    if os.path.exists(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, 'spam_l2')):
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, 'spam_l2')))
+    else:
+        results = []
+    para_xi_list = np.zeros(num_trials)
+    para_l2_list = np.zeros(num_trials)
+    for result in results:
+        trial_i, (para_xi, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+        para_xi_list[trial_i] = para_xi
+        para_l2_list[trial_i] = para_l2
+    return para_xi_list, para_l2_list
+
+
 def cv_ftrl_auc(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_gamma, para_l1 in product(
-            [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-            [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
-        para_l2, para_beta = 0.0, 1.0
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    data, gamma_list, para_l1_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    para_l2, para_beta = 0.0, 1.0
+    for para_gamma, para_l1 in product(gamma_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_l1, para_l2, para_beta, para_gamma)
         cv_res[(trial_i, para_gamma, para_l1)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_gamma, para_l1, para_l2, para_beta)
-    para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_gamma, para_l1, para_l2, para_beta = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_gamma, para_l1, para_l2, para_beta)
+    para_gamma, para_l1, para_l2, para_beta = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_l1, para_l2, para_beta, para_gamma)
     print(para_gamma, para_l1, metrics[1])
     sys.stdout.flush()
     return trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_ftrl_auc_hybrid(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_gamma, para_l1 in product(
-            [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-            [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
-        para_l2, para_beta, para_k = 0.0, 1.0, 500
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    data, gamma_list, para_l1_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    para_l2, para_beta, para_k = 0.0, 1.0, 500
+    for para_gamma, para_l1 in product(gamma_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc_hybrid(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma, para_k)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_l1, para_l2, para_beta, para_gamma, para_k)
         cv_res[(trial_i, para_gamma, para_l1)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_gamma, para_l1, para_l2, para_beta)
-    para_l2, para_beta, verbose, eval_step, record_aucs, para_k = 0.0, 1.0, 0, 100, 1, 500
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_gamma, para_l1, para_l2, para_beta = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_gamma, para_l1, para_l2, para_beta)
+    para_gamma, para_l1, para_l2, para_beta = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc_hybrid(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma, para_k)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_l1, para_l2, para_beta, para_gamma, para_k)
     print(para_gamma, para_l1, metrics[1])
     sys.stdout.flush()
     return trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_fsauc(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_r, para_g in product(10. ** np.arange(-1, 6, 1, dtype=float),
-                                  2. ** np.arange(-10, 11, 1, dtype=float)):
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    data, para_r_list, para_g_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    for para_r, para_g in product(para_r_list, para_g_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_fsauc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_r, para_g)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_r, para_g)
         cv_res[(trial_i, para_r, para_g)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_r, para_g)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_r, para_g = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_r, para_g)
+    para_r, para_g = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_fsauc(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_r, para_g)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_r, para_g)
     return trial_i, (para_r, para_g), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_spauc(input_para):
-    data, trial_i = input_para
-    mu_arr = 10. ** np.asarray([-7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5])
-    l1_arr = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
-    best_auc, para, cv_res = None, None, dict()
-    for para_mu, para_l1 in product(mu_arr, l1_arr):
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    data, para_mu_list, para_l1_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    for para_mu, para_l1 in product(para_mu_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spauc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_mu, para_l1)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_mu, para_l1)
         cv_res[(trial_i, para_mu, para_l1)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_mu, para_l1)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_mu, para_l1 = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_mu, para_l1)
+    para_mu, para_l1 = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_spauc(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_mu, para_l1)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_mu, para_l1)
     return trial_i, (para_mu, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_solam(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_xi, para_r in product(np.arange(1, 101, 9, dtype=float), 10. ** np.arange(-1, 6, 1, dtype=float)):
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    data, para_xi_list, para_r_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    for para_xi, para_r in product(para_xi_list, para_r_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_solam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_xi, para_r)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_xi, para_r)
         cv_res[(trial_i, para_xi, para_r)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_xi, para_r)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_xi, para_r = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_xi, para_r)
+    para_xi, para_r = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_solam(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
-        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i]
-        , data['p'], global_paras, para_xi, para_r)
+        data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_xi, para_r)
     return trial_i, (para_xi, para_r), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_spam_l1(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_xi, para_l1 in product(10. ** np.arange(-3, 4, 1, dtype=float),
-                                    [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
-        verbose, eval_step, record_aucs = 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    data, para_xi_list, para_l1_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    for para_xi, para_l1 in product(para_xi_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_xi, para_l1, 0.0)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_xi, para_l1, 0.0)
         cv_res[(trial_i, para_xi, para_l1)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_xi, para_l1)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_xi, para_l1 = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_xi, para_l1)
+    para_xi, para_l1 = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_xi, para_l1, 0.0)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_xi, para_l1, 0.0)
     return trial_i, (para_xi, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_spam_l2(input_para):
-    data, trial_i = input_para
+    data, para_xi_list, para_l2_list, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    for para_xi, para_l2 in product(10. ** np.arange(-3, 4, 1, dtype=float),
-                                    [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
-        verbose, eval_step, record_aucs = 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    for para_xi, para_l2 in product(para_xi_list, para_l2_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_xi, 0.0, para_l2)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_xi, 0.0, para_l2)
         cv_res[(trial_i, para_xi, para_l2)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_xi, para_l2)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, para = metrics[0], (para_xi, para_l2)
     para_xi, para_l2 = para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_xi, 0.0, para_l2)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_xi, 0.0, para_l2)
     return trial_i, (para_xi, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_spam_l1l2(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_xi, para_l1, para_l2 in product(
-            10. ** np.arange(-3, 4, 1, dtype=float),
-            [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0],
-            [1e-4, 1e-3, 1e-2, 1e-1, 1e0]):
-        verbose, eval_step, record_aucs = 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    data, para_xi_list, para_l2_list, para_l1_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    for para_xi, para_l1, para_l2 in product(para_xi_list, para_l1_list, para_l2_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_xi, para_l1, para_l2)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_xi, para_l1, para_l2)
         cv_res[(trial_i, para_xi, para_l1, para_l2)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_xi, para_l1, para_l2)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_xi, para_l1, para_l2 = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_xi, para_l1, para_l2)
+    para_xi, para_l1, para_l2 = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_spam(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_xi, para_l1, para_l2)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_xi, para_l1, para_l2)
     return trial_i, (para_xi, para_l1, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_ftrl_proximal(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    for para_gamma, para_l1 in product([1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0],
-                                       [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]):
-        para_l2, para_beta, verbose, eval_step, record_aucs = 0.0, 1.0, 0, data['n'], 0
-        global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+    data, para_gamma_list, para_l1_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    para_l2, para_beta = 0.0, 1.0,
+    for para_gamma, para_l1 in product(para_gamma_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_proximal(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_l1, para_l2, para_beta, para_gamma)
         cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_l1, para_l2, para_beta, para_gamma)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_l1, para_l2, para_beta, para_gamma = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_l1, para_l2, para_beta, para_gamma)
+    para_l1, para_l2, para_beta, para_gamma = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_proximal(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_l1, para_l2, para_beta, para_gamma)
-    print(para_gamma, para_l1, metrics[1])
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_l1, para_l2, para_beta, para_gamma)
     sys.stdout.flush()
     return trial_i, (para_l1, para_l2, para_beta, para_gamma), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_rda_l1(input_para):
-    data, trial_i = input_para
+    data, para_lambda_list, para_gamma_list, para_rho_list, trial_i = input_para
     best_auc, para, cv_res = None, None, dict()
-    # lambda: to control the sparsity
-    lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
-    # gamma: to control the learning rate. (it cannot be too small)
-    gamma_list = [1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
-    # rho: to control the sparsity-enhancing parameter.
-    rho_list = [0.0, 5e-3]
-    for para_lambda, para_gamma, para_rho in product(lambda_list, gamma_list, rho_list):
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    for para_lambda, para_gamma, para_rho in product(para_lambda_list, para_gamma_list, para_rho_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_rda_l1(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_lambda, para_gamma, para_rho)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_lambda, para_gamma, para_rho)
         cv_res[(trial_i, para_lambda, para_gamma, para_rho)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_lambda, para_gamma, para_rho)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, para = metrics[0], (para_lambda, para_gamma, para_rho)
     para_lambda, para_gamma, para_rho = para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_rda_l1(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_lambda, para_gamma, para_rho)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_lambda, para_gamma, para_rho)
     return trial_i, (para_lambda, para_gamma, para_rho), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def cv_adagrad(input_para):
-    data, trial_i = input_para
-    best_auc, para, cv_res = None, None, dict()
-    # lambda: to control the sparsity
-    lambda_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
-    # eta: to control the learning rate. (it cannot be too small)
-    eta_list = [1e-3, 1e-2, 1e-1, 1e0, 1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
-    epsilon_list = [1e-8]
-    for para_lambda, para_eta, para_epsilon in product(lambda_list, eta_list, epsilon_list):
-        global_paras = np.asarray([0, data['n'], 0], dtype=float)
+    data, para_lambda_list, para_eta_list, para_epsilon_list, trial_i = input_para
+    best_auc, best_para, cv_res = None, None, dict()
+    for para_lambda, para_eta, para_epsilon in product(para_lambda_list, para_eta_list, para_epsilon_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_adagrad(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
             data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
             data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-            data['p'], global_paras, para_lambda, para_eta, para_epsilon)
+            data['p'], np.asarray([0, data['n'], 0], dtype=float), para_lambda, para_eta, para_epsilon)
         cv_res[(trial_i, para_lambda, para_eta, para_epsilon)] = metrics
-        va_auc = metrics[0]
-        if best_auc is None or best_auc < va_auc:
-            best_auc, para = va_auc, (para_lambda, para_eta, para_epsilon)
-    verbose, eval_step, record_aucs = 0, 100, 1
-    global_paras = np.asarray([verbose, eval_step, record_aucs], dtype=float)
-    para_lambda, para_eta, para_epsilon = para
+        if best_auc is None or best_auc < metrics[0]:  # va_auc
+            best_auc, best_para = metrics[0], (para_lambda, para_eta, para_epsilon)
+    para_lambda, para_eta, para_epsilon = best_para
     wt, aucs, rts, iters, online_aucs, metrics = c_algo_adagrad(
         data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
         data['trial_%d_all_indices' % trial_i], data['trial_%d_tr_indices' % trial_i],
         data['trial_%d_va_indices' % trial_i], data['trial_%d_te_indices' % trial_i],
-        data['p'], global_paras, para_lambda, para_eta, para_epsilon)
+        data['p'], np.asarray([0, 100, 1], dtype=float), para_lambda, para_eta, para_epsilon)
     return trial_i, (para_lambda, para_eta, para_epsilon), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
 def run_high_dimensional(method, dataset, num_cpus):
-    if dataset == '01_webspam':
-        data = data_process_01_webspam()
-    elif dataset == '02_news20b':
+    num_trials = 10
+    if dataset == '02_news20b':
         data = data_process_02_news20b()
     elif dataset == '03_real_sim':
         data = data_process_03_realsim()
     elif dataset == '05_rcv1_bin':
         data = data_process_05_rcv1_bin()
-    elif dataset == '07_url':
-        data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
     elif dataset == '10_imdb':
         data = data_process_10_imdb()
     else:
-        f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
-        data = pkl.load(open(f_name))
-    para_space = [(data, trial_i) for trial_i in range(10)]
+        data = pkl.load(open(root_path + '%s/processed_%s.pkl' % (dataset, dataset)))
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_auc':
+        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, para_gamma_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_ftrl_auc, para_space)
     elif method == 'ftrl_auc_hybrid':
+        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, para_gamma_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_ftrl_auc_hybrid, para_space)
     elif method == 'spauc':
+        para_mu_list = 10. ** np.asarray([-7.0, -6.5, -6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5])
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, para_mu_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_spauc, para_space)
     elif method == 'fsauc':
+        para_r_list = 10. ** np.arange(-1, 6, 1, dtype=float)
+        para_g_list = 2. ** np.arange(-10, 11, 1, dtype=float)
+        para_space = [(data, para_r_list, para_g_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_fsauc, para_space)
     elif method == 'solam':
+        para_xi_list = np.arange(1, 101, 9, dtype=float)
+        para_r_list = 10. ** np.arange(-1, 6, 1, dtype=float)
+        para_space = [(data, para_xi_list, para_r_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_solam, para_space)
     elif method == 'spam_l1':
+        para_xi_list = 10. ** np.arange(-3, 4, 1, dtype=float),
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, para_xi_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_spam_l1, para_space)
     elif method == 'spam_l2':
+        para_xi_list = 10. ** np.arange(-3, 4, 1, dtype=float),
+        para_l2_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, para_xi_list, para_l2_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_spam_l2, para_space)
     elif method == 'spam_l1l2':
+        para_xi_list, para_l2_list = get_from_spam_l2(dataset=dataset, num_trials=num_trials)
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, [para_xi_list[trial_i]], [para_l2_list[trial_i]], para_l1_list, trial_i)
+                      for trial_i in range(num_trials)]
         ms_res = pool.map(cv_spam_l1l2, para_space)
     elif method == 'ftrl_proximal':
+        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        para_space = [(data, para_gamma_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_ftrl_proximal, para_space)
     elif method == 'rda_l1':
+        # lambda: to control the sparsity
+        para_lambda_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        # gamma: to control the learning rate. (it cannot be too small)
+        para_gamma_list = [1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
+        # rho: to control the sparsity-enhancing parameter.
+        para_rho_list = [0.0, 5e-3]
+        para_space = [(data, para_lambda_list, para_gamma_list, para_rho_list, trial_i)
+                      for trial_i in range(num_trials)]
         ms_res = pool.map(cv_rda_l1, para_space)
     elif method == 'adagrad':
+        # lambda: to control the sparsity
+        para_lambda_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        # eta: to control the learning rate. (it cannot be too small)
+        para_eta_list = [1e-3, 1e-2, 1e-1, 1e0, 1e1, 5e1, 1e2, 5e2, 1e3, 5e3]
+        para_epsilon_list = [1e-8]
+        para_space = [(data, para_lambda_list, para_eta_list, para_epsilon_list, trial_i)
+                      for trial_i in range(num_trials)]
         ms_res = pool.map(cv_adagrad, para_space)
     else:
         ms_res = None
     pool.close()
     pool.join()
-    f_name = root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)
-    pkl.dump(ms_res, open(f_name, 'wb'))
+    pkl.dump(ms_res, open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method), 'wb'))
 
 
 def run_huge_dimensional(method, dataset, task_id):
