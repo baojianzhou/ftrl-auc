@@ -949,8 +949,10 @@ def data_process_11_reviews(num_trials=10):
     np.random.seed(17)
     all_lines = []
     with open(os.path.join(root_path + '11_reviews/posi_reviews'), 'rb') as ff:
-        for each_line in ff:
+        for ind, each_line in enumerate(ff.readlines()):
             all_lines.append(each_line)
+            if ind > 500:
+                break
     with open(os.path.join(root_path + '11_reviews/nega_reviews'), 'rb') as ff:
         for each_line in ff:
             all_lines.append(each_line)

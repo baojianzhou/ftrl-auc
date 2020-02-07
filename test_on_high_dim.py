@@ -768,6 +768,8 @@ def show_auc_curves(dataset):
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
                   r'SOLAM', r'SPAUC', r'FSAUC']
+    list_methods = ['ftrl_auc', 'ftrl_proximal']
+    label_list = [r'FTRL-AUC', r'FTRL-Proximal']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(1, 2, sharey=True)
