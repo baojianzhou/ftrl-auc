@@ -61,7 +61,7 @@ def get_from_spam_l2(dataset, num_trials):
 def cv_ftrl_auc(input_para):
     data, gamma_list, para_l1_list, trial_i = input_para
     best_auc, best_para, cv_res = None, None, dict()
-    para_l2, para_beta = 0.0, 1.0
+    para_l2, para_beta = 0.0, 1.
     for para_gamma, para_l1 in product(gamma_list, para_l1_list):
         wt, aucs, rts, iters, online_aucs, metrics = c_algo_ftrl_auc(
             data['x_tr_vals'], data['x_tr_inds'], data['x_tr_poss'], data['x_tr_lens'], data['y_tr'],
@@ -827,6 +827,189 @@ def show_auc_curves_online(dataset):
     plt.close()
 
 
+def result_all_converge_curves():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 18
+    rcParams['figure.figsize'] = 16, 5
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
+                  r'SOLAM', r'SPAUC', r'FSAUC']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(1, 3)
+    for i in range(3):
+        ax[i].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+    num_trials = 10
+    title_list = ['real-sim', 'pcmac', 'farmads']
+    for data_ind, dataset in enumerate(['03_real_sim', '06_pcmac', '08_farmads']):
+        for ind, method in enumerate(list_methods):
+            print(method)
+            results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+            aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
+            rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
+            ax[data_ind].plot(rts, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
+                              markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
+        ax[0].set_ylabel('AUC')
+        ax[data_ind].set_xlabel('Run Time (seconds)')
+        ax[data_ind].set_title(title_list[data_ind])
+    for i in range(2):
+        ax[i].set_ylim([0.8, 1.0])
+        ax[i].set_yticks([0.80, 0.85, 0.90, 0.95, 1.0])
+        ax[i].set_yticklabels([0.80, 0.85, 0.90, 0.95, 1.0])
+    ax[2].set_ylim([0.6, 1.0])
+    ax[2].set_yticks([0.60, 0.7, 0.80, 0.90, 1.0])
+    ax[2].set_yticklabels([0.60, 0.7, 0.80, 0.90, 1.0])
+    plt.subplots_adjust(wspace=0.15, hspace=0.2)
+    ax[1].legend(loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
+                 labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all.pdf'
+    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
+def result_all_converge_curves_iter():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 18
+    rcParams['figure.figsize'] = 16, 5
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
+                  r'SOLAM', r'SPAUC', r'FSAUC']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(1, 3)
+    for i in range(3):
+        ax[i].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+    num_trials = 10
+    title_list = ['real-sim', 'pcmac', 'farmads']
+    for data_ind, dataset in enumerate(['03_real_sim', '06_pcmac', '08_farmads']):
+        for ind, method in enumerate(list_methods):
+            print(method)
+            results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+            aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
+            iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
+            ax[data_ind].plot(iters, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
+                              markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
+        ax[0].set_ylabel('AUC')
+        ax[data_ind].set_xlabel('Samples Seen')
+        ax[data_ind].set_title(title_list[data_ind])
+    for i in range(2):
+        ax[i].set_ylim([0.8, 1.0])
+        ax[i].set_yticks([0.80, 0.85, 0.90, 0.95, 1.0])
+        ax[i].set_yticklabels([0.80, 0.85, 0.90, 0.95, 1.0])
+    ax[0].set_xticks([0, 15000, 30000, 45000])
+    ax[0].set_xticklabels([0, 15000, 30000, 45000])
+    ax[1].set_xticks([0, 400, 800, 1200])
+    ax[1].set_xticklabels([0, 400, 800, 1200])
+    ax[2].set_xticks([0, 800, 1600, 2400])
+    ax[2].set_xticklabels([0, 800, 1600, 2400])
+    ax[2].set_ylim([0.6, 1.0])
+    ax[2].set_yticks([0.60, 0.7, 0.80, 0.90, 1.0])
+    ax[2].set_yticklabels([0.60, 0.7, 0.80, 0.90, 1.0])
+    plt.subplots_adjust(wspace=0.15, hspace=0.2)
+    ax[1].legend(loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
+                 labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all-iter.pdf'
+    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
+def show_all_parameter_select():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 18
+    rcParams['figure.figsize'] = 16, 5
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
+    marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(1, 3)
+    for i in range(3):
+        ax[i].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+    num_trials = 10
+    title_list = ['real-sim', 'pcmac', 'farmads']
+    for data_ind, dataset in enumerate(['03_real_sim', '06_pcmac', '08_farmads']):
+        for ind, method in enumerate(list_methods):
+            print(method)
+            results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+            if method == 'ftrl_auc':
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_l1 in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            elif method == 'spam_l1':
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_xi, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_l1 in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            elif method == 'spam_l1l2':
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_xi, para_l1, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_l1 in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1, para_l2)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1, para_l2)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            else:  # spauc
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_mu, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_l1 in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            ax[data_ind].plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                              markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+            ax[0].set_ylabel('Sparse-Ratio')
+            ax[data_ind].set_xlabel('AUC')
+            ax[data_ind].set_yscale('log')
+            ax[data_ind].set_title(title_list[data_ind])
+    plt.subplots_adjust(wspace=0.15, hspace=0.2)
+    ax[1].legend(fancybox=True, loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
+                 labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/para-select-all.pdf'
+    plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
@@ -848,3 +1031,9 @@ if __name__ == '__main__':
         result_statistics_huge(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_curves_huge':
         result_curves_huge(dataset=sys.argv[2])
+    elif sys.argv[1] == 'all_converge_curves':
+        result_all_converge_curves()
+    elif sys.argv[1] == 'all_converge_curves_iter':
+        result_all_converge_curves_iter()
+    elif sys.argv[1] == 'all_para_select':
+        show_all_parameter_select()
