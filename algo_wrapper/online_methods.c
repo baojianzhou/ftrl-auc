@@ -1077,10 +1077,10 @@ void _algo_ftrl_auc(Data *data,
         printf("para_l1: %.4f para_gamma: %.4f sparse_ratio: %.4f\n",
                para_l1, para_gamma, re->sparse_ratio);
         printf("\n-------------------------------------------------------\n");
+        printf("para_l1: %.4e para_gamma: %.4e sparse_ratio: %.4e ",
+               para_l1, para_gamma, re->sparse_ratio);
+        printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     }
-    printf("para_l1: %.4e para_gamma: %.4e sparse_ratio: %.4e ",
-           para_l1, para_gamma, re->sparse_ratio);
-    printf("va_auc: %.4f te_auc: %.4f\n", re->va_auc, re->te_auc);
     free(x_nega);
     free(x_posi);
     free(gt);

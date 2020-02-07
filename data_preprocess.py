@@ -491,7 +491,7 @@ def data_process_05_rcv1_bin(num_trials=10):
 
 
 def data_process_06_pcmac(num_trials=10):
-    np.random.seed(int(time.time()))
+    np.random.seed(17)
     data = {'file_path': root_path + '06_pcmac/raw_pcmac',
             'data_name': '06_pcmac',
             'x_tr_vals': [],

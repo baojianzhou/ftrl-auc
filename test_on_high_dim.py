@@ -323,6 +323,7 @@ def run_high_dimensional(method, dataset, num_cpus):
                         1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
         para_space = [(data, para_gamma_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_ftrl_auc, para_space)
+        print(np.mean(np.asarray([_[-1][1] for _ in ms_res])))
     elif method == 'ftrl_auc_hybrid':
         para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
         para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
@@ -504,29 +505,6 @@ def result_curves():
     fig, ax = plt.subplots(1, 2)
     for ind, method in enumerate(['ftrl_auc_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']):
         results = pkl.load(open(root_path + '03_real_sim/re_03_real_sim_%s.pkl' % method))
-        rts_matrix, aucs_matrix = None, None
-        for item in results:
-            rts = item[-2]
-            aucs = item[-3]
-            if rts_matrix is None:
-                rts_matrix = np.zeros_like(rts)
-                aucs_matrix = np.zeros_like(aucs)
-            rts_matrix += rts
-            aucs_matrix += aucs
-        rts_matrix /= float(len(results))
-        aucs_matrix /= float(len(results))
-        ax[0].plot(rts_matrix, aucs_matrix, label=label_method[ind])
-        ax[1].plot(aucs_matrix[:100], label=label_method[ind])
-    plt.legend()
-    plt.show()
-
-
-def result_sparsity(dataset='03_real_sim'):
-    import matplotlib.pyplot as plt
-    label_method = ['FTRL-AUC', 'SPAM-L1', 'SPAM-L2', 'SPAM-L1L2', 'FSAUC', 'SOLAM']
-    fig, ax = plt.subplots(1, 2)
-    for ind, method in enumerate(['ftrl_fast', 'spam_l1', 'spam_l2', 'spam_l1l2', 'fsauc', 'solam']):
-        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         rts_matrix, aucs_matrix = None, None
         for item in results:
             rts = item[-2]
@@ -771,8 +749,6 @@ def show_auc_curves(dataset):
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
                   r'SOLAM', r'SPAUC', r'FSAUC']
-    list_methods = ['ftrl_auc', 'ftrl_proximal']
-    label_list = [r'FTRL-AUC', r'FTRL-Proximal']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(1, 2, sharey=True)
@@ -785,7 +761,6 @@ def show_auc_curves(dataset):
         aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
-        online_aucs = np.mean(np.asarray([results[trial_i][7] for trial_i in range(num_trials)]), axis=0)
         ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
         ax[1].plot(iters, aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
@@ -867,11 +842,9 @@ if __name__ == '__main__':
         show_auc_curves(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_curves_online':
         show_auc_curves_online(dataset=sys.argv[2])
-    elif sys.argv[1] == 'show_sparsity':
-        result_sparsity(dataset=sys.argv[2])
+    elif sys.argv[1] == 'show_para_select':
+        show_parameter_select(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_huge':
         result_statistics_huge(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_curves_huge':
         result_curves_huge(dataset=sys.argv[2])
-    elif sys.argv[1] == 'show_para_select':
-        show_parameter_select(dataset=sys.argv[2])
