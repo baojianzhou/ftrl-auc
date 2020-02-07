@@ -306,6 +306,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_03_realsim()
     elif dataset == '05_rcv1_bin':
         data = data_process_05_rcv1_bin()
+    elif dataset == '06_pcmac':
+        data = data_process_06_pcmac()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
     elif dataset == '10_imdb':
