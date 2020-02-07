@@ -418,7 +418,6 @@ def run_huge_dimensional(method, dataset, task_id):
 def result_statistics(dataset):
     aucs = []
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'solam', 'spauc', 'fsauc']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -589,7 +588,6 @@ def show_parameter_select(dataset):
     plt.rcParams["font.size"] = 14
     rcParams['figure.figsize'] = 8, 4
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
-    list_methods = ['ftrl_auc', 'spam_l1', 'spauc']
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
     marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
@@ -602,6 +600,8 @@ def show_parameter_select(dataset):
         print(method)
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         if method == 'ftrl_auc':
+            para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
@@ -617,6 +617,8 @@ def show_parameter_select(dataset):
             ax[1].plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
                        markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
         elif method == 'spam_l1':
+            para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
@@ -645,6 +647,8 @@ def show_parameter_select(dataset):
             plt.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
                      markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
         elif method == 'spam_l1l2':
+            para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
@@ -686,6 +690,8 @@ def show_parameter_select(dataset):
             plt.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
                      markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
         elif method == 'spauc':
+            para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             para_l1_list = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
             auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
             sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
@@ -760,7 +766,6 @@ def show_auc_curves(dataset):
     plt.rcParams["font.size"] = 14
     rcParams['figure.figsize'] = 8, 4
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'solam', 'spauc', 'fsauc']
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
                   r'SOLAM', r'SPAUC', r'FSAUC']
