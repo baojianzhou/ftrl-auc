@@ -147,8 +147,8 @@ def cv_adagrad(input_para):
     return trial_i, (para_lambda, para_eta, para_epsilon), cv_res, wt, aucs, rts, iters, online_aucs, metrics
 
 
-def get_imbalance_data(data, num_trials=10):
-    data['num_posi'] = int(.1 * data['num_nega'])
+def get_imbalance_data(data, imbalance_ratio=0.1, num_trials=10):
+    data['num_posi'] = int(imbalance_ratio * data['num_nega'])
     cur_posi = 0
     y_tr = []
     x_tr_vals = []
@@ -218,7 +218,7 @@ def get_imbalance_data(data, num_trials=10):
 
 
 def run_high_dimensional(method, dataset, num_cpus):
-    num_trials = 10
+    num_trials, imbalance_ratio = 10, 0.1
     if dataset == '02_news20b':
         data = data_process_02_news20b()
     elif dataset == '03_real_sim':
@@ -235,7 +235,7 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_11_reviews()
     else:
         data = None
-    data = get_imbalance_data(data)
+    data = get_imbalance_data(data, imbalance_ratio=imbalance_ratio, num_trials=num_trials)
     pool = multiprocessing.Pool(processes=num_cpus)
     if method == 'ftrl_auc':
         para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
@@ -275,7 +275,8 @@ def run_high_dimensional(method, dataset, num_cpus):
         ms_res = None
     pool.close()
     pool.join()
-    pkl.dump(ms_res, open(root_path + '%s/re_%s_%s_imbalance.pkl' % (dataset, dataset, method), 'wb'))
+    pkl.dump(ms_res, open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                          (dataset, dataset, method, imbalance_ratio), 'wb'))
 
 
 def run_huge_dimensional(method, dataset, task_id):
