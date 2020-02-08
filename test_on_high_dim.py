@@ -434,6 +434,7 @@ def result_statistics(dataset):
         a = ("%0.5f" % float(np.mean(np.asarray(te_auc)))).lstrip('0')
         b = ("%0.5f" % float(np.std(np.asarray(te_auc)))).lstrip('0')
         aucs.append('$\pm$'.join([a, b]))
+    print('auc: '),
     print(' & '.join(aucs))
     run_times = []
     for method in list_methods:
@@ -445,6 +446,7 @@ def result_statistics(dataset):
         a = ("%0.3f" % float(np.mean(np.asarray(run_time))))
         b = ("%0.3f" % float(np.std(np.asarray(run_time))))
         run_times.append('$\pm$'.join([a, b]))
+    print('run time:'),
     print(' & '.join(run_times))
     sparse_ratios = []
     for method in list_methods:
@@ -456,6 +458,7 @@ def result_statistics(dataset):
         a = ("%0.4f" % float(np.mean(np.asarray(sparse_ratio)))).lstrip('0')
         b = ("%0.4f" % float(np.std(np.asarray(sparse_ratio)))).lstrip('0')
         sparse_ratios.append('$\pm$'.join([a, b]))
+    print('sparse-ratio: '),
     print(' & '.join(sparse_ratios))
 
 
