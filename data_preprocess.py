@@ -944,7 +944,7 @@ def data_process_11_reviews(num_trials=10):
 
 
 def main():
-    data_process_06_pcmac()
+    data_process_10_imdb()
 
 
 if __name__ == '__main__':
