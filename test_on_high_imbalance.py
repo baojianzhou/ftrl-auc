@@ -250,6 +250,7 @@ def run_high_dimensional(method, dataset, num_cpus):
                         1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
         para_space = [(data, para_gamma_list, para_l1_list, trial_i) for trial_i in range(num_trials)]
         ms_res = pool.map(cv_ftrl_proximal, para_space)
+        print(np.mean(np.asarray([_[-1][1] for _ in ms_res])))
     elif method == 'rda_l1':
         # lambda: to control the sparsity
         para_lambda_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
@@ -302,11 +303,12 @@ def run_huge_dimensional(method, dataset, task_id):
     pkl.dump(ms_res, open(f_name, 'wb'))
 
 
-def result_statistics(dataset):
+def result_statistics(dataset, imbalance_ratio=0.1):
     aucs = []
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
     for method in list_methods:
-        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                (dataset, dataset, method, imbalance_ratio)))
         te_auc = []
         for item in results:
             metrics = item[-1]
@@ -318,7 +320,8 @@ def result_statistics(dataset):
     print(' & '.join(aucs))
     run_times = []
     for method in list_methods:
-        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                (dataset, dataset, method, imbalance_ratio)))
         run_time = []
         for item in results:
             metrics = item[-1]
@@ -330,7 +333,8 @@ def result_statistics(dataset):
     print(' & '.join(run_times))
     sparse_ratios = []
     for method in list_methods:
-        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                (dataset, dataset, method, imbalance_ratio)))
         sparse_ratio = []
         for item in results:
             metrics = item[-1]
@@ -619,7 +623,7 @@ def show_parameter_select(dataset):
     plt.close()
 
 
-def show_auc_curves(dataset):
+def show_auc_curves(dataset, imbalance_ratio=0.1):
     import matplotlib.pyplot as plt
     from pylab import rcParams
     plt.rcParams['text.usetex'] = True
@@ -628,10 +632,9 @@ def show_auc_curves(dataset):
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
     plt.rcParams["font.size"] = 14
     rcParams['figure.figsize'] = 8, 4
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
-                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
-                  r'SOLAM', r'SPAUC', r'FSAUC']
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+    label_list = [r'FTRL-AUC', r'\textsc{AdaGrad}',
+                  r'RDA-$\displaystyle \ell^1$', r'FTRL-Proximal']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(1, 2, sharey=True)
@@ -640,7 +643,8 @@ def show_auc_curves(dataset):
     num_trials = 10
     for ind, method in enumerate(list_methods):
         print(method)
-        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                (dataset, dataset, method, imbalance_ratio)))
         aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
@@ -660,7 +664,8 @@ def show_auc_curves(dataset):
     ax[1].legend(fancybox=True, loc='lower right', framealpha=1.0,
                  bbox_to_anchor=(1.0, 0.0), frameon=False, borderpad=0.1,
                  labelspacing=0.2, handletextpad=0.1, markerfirst=True)
-    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s.pdf' % dataset
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-%s-imbalance_%.1f.pdf' % \
+             (dataset, imbalance_ratio)
     fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
