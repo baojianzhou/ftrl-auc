@@ -864,7 +864,6 @@ def data_process_11_reviews(num_trials=10):
     with open(os.path.join(root_path + '11_reviews/nega_reviews'), 'rb') as ff:
         for each_line in ff:
             all_lines.append(each_line)
-
     data = {'file_path': root_path + '11_reviews/null',
             'data_name': '11_reviews',
             'x_tr_vals': [],
