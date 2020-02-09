@@ -304,10 +304,14 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_02_news20b()
     elif dataset == '03_real_sim':
         data = data_process_03_realsim()
+    elif dataset == '04_avazu':
+        data = data_process_04_avazu()
     elif dataset == '05_rcv1_bin':
         data = data_process_05_rcv1_bin()
     elif dataset == '06_pcmac':
         data = data_process_06_pcmac()
+    elif dataset == '07_url':
+        data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
     elif dataset == '10_imdb':

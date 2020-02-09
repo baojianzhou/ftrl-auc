@@ -306,13 +306,14 @@ def run_huge_dimensional(method, dataset, task_id):
 def result_statistics(dataset, imbalance_ratio=0.1):
     aucs = []
     list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+    list_methods = ['ftrl_auc', 'ftrl_proximal']
     for method in list_methods:
-        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.2f.pkl' %
                                 (dataset, dataset, method, imbalance_ratio)))
         te_auc = []
         for item in results:
             metrics = item[-1]
-            te_auc.append(metrics[1])
+            te_auc.append(metrics[0])
         a = ("%0.5f" % float(np.mean(np.asarray(te_auc)))).lstrip('0')
         b = ("%0.5f" % float(np.std(np.asarray(te_auc)))).lstrip('0')
         aucs.append('$\pm$'.join([a, b]))
@@ -320,7 +321,7 @@ def result_statistics(dataset, imbalance_ratio=0.1):
     print(' & '.join(aucs))
     run_times = []
     for method in list_methods:
-        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.2f.pkl' %
                                 (dataset, dataset, method, imbalance_ratio)))
         run_time = []
         for item in results:
@@ -333,7 +334,7 @@ def result_statistics(dataset, imbalance_ratio=0.1):
     print(' & '.join(run_times))
     sparse_ratios = []
     for method in list_methods:
-        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+        results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.2f.pkl' %
                                 (dataset, dataset, method, imbalance_ratio)))
         sparse_ratio = []
         for item in results:
@@ -899,6 +900,7 @@ def show_all_parameter_select():
 
 
 if __name__ == '__main__':
+    imbalance_ratio = 0.05
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
                              dataset=sys.argv[3],
@@ -908,7 +910,7 @@ if __name__ == '__main__':
                              dataset=sys.argv[3],
                              task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'show_auc':
-        result_statistics(dataset=sys.argv[2])
+        result_statistics(dataset=sys.argv[2], imbalance_ratio=imbalance_ratio)
     elif sys.argv[1] == 'show_auc_curves':
         show_auc_curves(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_curves_online':
