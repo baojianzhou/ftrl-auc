@@ -925,3 +925,56 @@ if __name__ == '__main__':
         result_all_converge_curves_iter()
     elif sys.argv[1] == 'all_para_select':
         show_all_parameter_select()
+    elif sys.argv[1] == 'show_all_auc':
+        imbalance_ratio = 0.1
+        all_matrix = []
+        for dataset in ['08_farmads', '03_real_sim', '05_rcv1_bin',
+                        '02_news20b', '11_reviews', '10_imdb']:
+            aucs = []
+            list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+            for method in list_methods:
+                results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                        (dataset, dataset, method, imbalance_ratio)))
+                te_auc = []
+                for item in results:
+                    metrics = item[-1]
+                    te_auc.append(metrics[1])
+                all_matrix.append(np.mean(np.asarray(te_auc)))
+                a = ("%0.4f" % float(np.mean(np.asarray(te_auc)))).lstrip('0')
+                b = ("%0.4f" % float(np.std(np.asarray(te_auc)))).lstrip('0')
+                aucs.append('$\pm$'.join([a, b]))
+            print('auc: '),
+            print(' & '.join(aucs))
+        all_matrix = np.reshape(np.asarray(all_matrix), newshape=(6, 4))
+        for xx, yy in zip(np.mean(all_matrix, axis=0), np.std(all_matrix, axis=0)):
+            print('%.4f$\pm$%.4f' % (xx, yy))
+        for dataset in ['08_farmads', '03_real_sim', '05_rcv1_bin',
+                        '02_news20b', '11_reviews', '10_imdb']:
+            run_times = []
+            for method in list_methods:
+                results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                        (dataset, dataset, method, imbalance_ratio)))
+                run_time = []
+                for item in results:
+                    metrics = item[-1]
+                    run_time.append(metrics[5])
+                a = ("%0.3f" % float(np.mean(np.asarray(run_time))))
+                b = ("%0.3f" % float(np.std(np.asarray(run_time))))
+                run_times.append('$\pm$'.join([a, b]))
+            print('run time:'),
+            print(' & '.join(run_times))
+        for dataset in ['08_farmads', '03_real_sim', '05_rcv1_bin',
+                        '02_news20b', '11_reviews', '10_imdb']:
+            sparse_ratios = []
+            for method in list_methods:
+                results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+                                        (dataset, dataset, method, imbalance_ratio)))
+                sparse_ratio = []
+                for item in results:
+                    metrics = item[-1]
+                    sparse_ratio.append(metrics[3])
+                a = ("%0.4f" % float(np.mean(np.asarray(sparse_ratio)))).lstrip('0')
+                b = ("%0.4f" % float(np.std(np.asarray(sparse_ratio)))).lstrip('0')
+                sparse_ratios.append('$\pm$'.join([a, b]))
+            print('sparse-ratio: '),
+            print(' & '.join(sparse_ratios))
