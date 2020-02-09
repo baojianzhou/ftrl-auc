@@ -1051,6 +1051,14 @@ if __name__ == '__main__':
         run_huge_dimensional(method=sys.argv[2],
                              dataset=sys.argv[3],
                              task_id=int(sys.argv[4]))
+    elif sys.argv[1] == 'run_merge':
+        dataset = sys.argv[2]
+        for method in ['ftrl_auc', 'ftrl_proximal']:
+            all_res = []
+            for i in range(10):
+                re = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl' % (dataset, dataset, method, i)))
+                all_res.append(re)
+            pkl.dump(all_res, open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method), 'wb'))
     elif sys.argv[1] == 'show_auc':
         result_statistics(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_auc_curves':
