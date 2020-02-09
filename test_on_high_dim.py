@@ -425,6 +425,7 @@ def run_huge_dimensional(method, dataset, task_id):
 def result_statistics(dataset):
     aucs = []
     list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    list_methods = ['ftrl_auc', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
         te_auc = []
@@ -941,8 +942,8 @@ def result_all_converge_curves_iter():
     ax[1, 2].set_yticks([0.7, 0.80, 0.90, 1.0])
     ax[1, 2].set_yticklabels([0.7, 0.80, 0.90, 1.0])
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[1].legend(loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
-                 labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+    ax[1, 1].legend(loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
+                    labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all-iter.pdf'
     fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()

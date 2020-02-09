@@ -218,7 +218,7 @@ def get_imbalance_data(data, imbalance_ratio=0.1, num_trials=10):
 
 
 def run_high_dimensional(method, dataset, num_cpus):
-    num_trials, imbalance_ratio = 10, 0.1
+    num_trials, imbalance_ratio = 10, 0.01
     if dataset == '02_news20b':
         data = data_process_02_news20b()
     elif dataset == '03_real_sim':
@@ -276,7 +276,7 @@ def run_high_dimensional(method, dataset, num_cpus):
         ms_res = None
     pool.close()
     pool.join()
-    pkl.dump(ms_res, open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl' %
+    pkl.dump(ms_res, open(root_path + '%s/re_%s_%s_imbalance_%.2f.pkl' %
                           (dataset, dataset, method, imbalance_ratio), 'wb'))
 
 
