@@ -883,7 +883,7 @@ def result_all_converge_curves():
     ax[1, 2].set_yticks([0.7, 0.80, 0.90, 1.0])
     ax[1, 2].set_yticklabels([0.7, 0.80, 0.90, 1.0])
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[0, 0].legend(loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
+    ax[0, 0].legend(loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
                     labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all.pdf'
     fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')

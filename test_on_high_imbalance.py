@@ -218,7 +218,7 @@ def get_imbalance_data(data, imbalance_ratio=0.1, num_trials=10):
 
 
 def run_high_dimensional(method, dataset, num_cpus):
-    num_trials, imbalance_ratio = 10, 0.01
+    num_trials, imbalance_ratio = 10, 0.05
     if dataset == '02_news20b':
         data = data_process_02_news20b()
     elif dataset == '03_real_sim':
@@ -926,7 +926,7 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'all_para_select':
         show_all_parameter_select()
     elif sys.argv[1] == 'show_all_auc':
-        imbalance_ratio = 0.1
+        imbalance_ratio = 0.05
         all_matrix = []
         for dataset in ['08_farmads', '03_real_sim', '05_rcv1_bin',
                         '02_news20b', '11_reviews', '10_imdb']:
