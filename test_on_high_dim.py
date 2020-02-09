@@ -544,7 +544,7 @@ def result_curves_huge(dataset='07_url'):
 
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
     fig, ax = plt.subplots(1, 2)
-    num_trials = 1
+    num_trials = 7
     for ind, method in enumerate(['ftrl_auc', 'ftrl_proximal']):
         results = dict()
         for _ in range(num_trials):
@@ -552,10 +552,12 @@ def result_curves_huge(dataset='07_url'):
                                  (dataset, dataset, method, _)))
             results[_] = {1: item[4], 2: item[5], 3: item[6]}
         aucs = np.mean(np.asarray([results[trial_i][1] for trial_i in range(num_trials)]), axis=0)
+        aucs_std = np.std(np.asarray([results[trial_i][1] for trial_i in range(num_trials)]), axis=0)
         rts = np.mean(np.asarray([results[trial_i][2] for trial_i in range(num_trials)]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][3] for trial_i in range(num_trials)]), axis=0)
-        ax[0].plot(rts[:20], aucs[:20], label=label_method[ind])
-        ax[1].plot(iters[:20], aucs[:20], label=label_method[ind])
+        print(aucs[:10],aucs_std[:10])
+        ax[0].plot(rts[:40], aucs[:40], label=label_method[ind])
+        ax[1].plot(iters[:40], aucs[:40], label=label_method[ind])
     ax[0].set_ylabel('AUC')
     ax[1].set_ylabel('AUC')
     ax[0].set_xlabel('Run Time(seconds)')
@@ -760,7 +762,7 @@ def show_auc_curves(dataset):
     fig, ax = plt.subplots(1, 2, sharey=True)
     ax[0].grid(b=True, which='both', color='lightgray', linewidth=0.3, linestyle='dashed', axis='both')
     ax[1].grid(b=True, which='both', color='lightgray', linewidth=0.3, linestyle='dashed', axis='both')
-    num_trials = 10
+    num_trials = 7
     for ind, method in enumerate(list_methods):
         print(method)
         results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))

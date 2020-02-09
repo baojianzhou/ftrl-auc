@@ -329,24 +329,20 @@ def data_process_04_avazu(num_trials=10):
     print('number of negative: %d' % len([_ for _ in data['y_tr'] if _ < 0]))
     print('number of num_nonzeros: %d' % data['num_nonzeros'])
     print('k: %d' % data['k'])
-    fix_tr, fix_val = 12642186, 1953951
     for _ in range(num_trials):
-        all_indices = np.arange(0, fix_tr + fix_val)
-        print(all_indices[:5])
+        all_indices = np.random.permutation(data['n'])
         data['trial_%d_all_indices' % _] = np.asarray(all_indices, dtype=np.int32)
         assert data['n'] == len(data['trial_%d_all_indices' % _])
-        tr_indices = all_indices[:fix_tr]
+        tr_indices = all_indices[:int(len(all_indices) * 4. / 6.)]
         data['trial_%d_tr_indices' % _] = np.asarray(tr_indices, dtype=np.int32)
-        va_indices = all_indices[fix_tr:]
+        va_indices = all_indices[int(len(all_indices) * 4. / 6.):int(len(all_indices) * 5. / 6.)]
         data['trial_%d_va_indices' % _] = np.asarray(va_indices, dtype=np.int32)
-        te_indices = all_indices[fix_tr:]
+        te_indices = all_indices[int(len(all_indices) * 5. / 6.):]
         data['trial_%d_te_indices' % _] = np.asarray(te_indices, dtype=np.int32)
         n_tr = len(data['trial_%d_tr_indices' % _])
         n_va = len(data['trial_%d_va_indices' % _])
         n_te = len(data['trial_%d_te_indices' % _])
-        print(n_tr)
-        print(n_va)
-        print(n_te)
+        assert data['n'] == (n_tr + n_va + n_te)
     sys.stdout.flush()
     return data
 
