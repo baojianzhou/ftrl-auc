@@ -406,20 +406,22 @@ def run_high_dimensional(method, dataset, num_cpus):
 def run_huge_dimensional(method, dataset, task_id):
     if dataset == '07_url':
         data = data_process_07_url()
-    elif dataset == '01_webspam':
-        data = data_process_01_webspam()
     elif dataset == '04_avazu':
         data = data_process_04_avazu()
-    elif dataset == '09_kdd2010':
-        data = data_process_09_kdd2010()
     else:
         f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
         data = pkl.load(open(f_name))
     trial_i = int(task_id)
     if method == 'ftrl_auc':
-        ms_res = cv_ftrl_auc((data, trial_i))
+        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        ms_res = cv_ftrl_auc((data, para_gamma_list, para_l1_list, trial_i))
     elif method == 'ftrl_proximal':
-        ms_res = cv_ftrl_proximal((data, trial_i))
+        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
+        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+        ms_res = cv_ftrl_proximal((data, para_gamma_list, para_l1_list, trial_i))
     else:
         ms_res = None
     f_name = root_path + '%s/re_%s_%s_%d.pkl' % (dataset, dataset, method, task_id)

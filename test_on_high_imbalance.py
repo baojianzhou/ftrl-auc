@@ -306,14 +306,14 @@ def run_huge_dimensional(method, dataset, task_id):
 def result_statistics(dataset, imbalance_ratio=0.1):
     aucs = []
     list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
-    list_methods = ['ftrl_auc', 'ftrl_proximal']
+    # list_methods = ['ftrl_auc', 'ftrl_proximal']
     for method in list_methods:
         results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.2f.pkl' %
                                 (dataset, dataset, method, imbalance_ratio)))
         te_auc = []
         for item in results:
             metrics = item[-1]
-            te_auc.append(metrics[0])
+            te_auc.append(metrics[1])
         a = ("%0.5f" % float(np.mean(np.asarray(te_auc)))).lstrip('0')
         b = ("%0.5f" % float(np.std(np.asarray(te_auc)))).lstrip('0')
         aucs.append('$\pm$'.join([a, b]))
