@@ -545,27 +545,21 @@ def result_curves_huge(dataset='07_url'):
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
     fig, ax = plt.subplots(1, 2)
     num_trials = 1
-    for ind, method in enumerate(['ftrl_fast', 'ftrl_proximal']):
-        rts_matrix, aucs_matrix = None, None
+    for ind, method in enumerate(['ftrl_auc', 'ftrl_proximal']):
+        results = dict()
         for _ in range(num_trials):
             item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl' %
                                  (dataset, dataset, method, _)))
-            rts = item[-2]
-            aucs = item[-3]
-            if rts_matrix is None:
-                rts_matrix = np.zeros_like(rts)
-                aucs_matrix = np.zeros_like(aucs)
-            rts_matrix += rts
-            aucs_matrix += aucs
-        rts_matrix /= float(num_trials)
-        aucs_matrix /= float(num_trials)
-        print(len(rts_matrix), len(aucs_matrix))
-        ax[0].plot(rts_matrix[:200], aucs_matrix[:200], label=label_method[ind])
-        ax[1].plot(aucs_matrix[:200], label=label_method[ind])
+            results[_] = {1: item[4], 2: item[5], 3: item[6]}
+        aucs = np.mean(np.asarray([results[trial_i][1] for trial_i in range(num_trials)]), axis=0)
+        rts = np.mean(np.asarray([results[trial_i][2] for trial_i in range(num_trials)]), axis=0)
+        iters = np.mean(np.asarray([results[trial_i][3] for trial_i in range(num_trials)]), axis=0)
+        ax[0].plot(rts[:20], aucs[:20], label=label_method[ind])
+        ax[1].plot(iters[:20], aucs[:20], label=label_method[ind])
     ax[0].set_ylabel('AUC')
     ax[1].set_ylabel('AUC')
     ax[0].set_xlabel('Run Time(seconds)')
-    ax[1].set_xlabel('Iteration * $\displaystyle 10^{4}$')
+    ax[1].set_xlabel('Samples seen')
     ax[0].legend()
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/avazu-auc.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
@@ -759,6 +753,8 @@ def show_auc_curves(dataset):
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
                   r'SOLAM', r'SPAUC', r'FSAUC']
+    list_methods = ['ftrl_auc', 'ftrl_proximal']
+    label_list = [r'FTRL-AUC', r'FTRL-Proximal']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(1, 2, sharey=True)
@@ -771,9 +767,9 @@ def show_auc_curves(dataset):
         aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
         rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
-        ax[0].plot(rts, aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
+        ax[0].plot(rts[:20], aucs[:20], marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
-        ax[1].plot(iters, aucs, marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
+        ax[1].plot(iters[:20], aucs[:20], marker=marker_list[ind], markersize=3.0, markerfacecolor='w',
                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
     ax[0].set_ylabel('AUC')
     ax[0].set_xlabel('Run Time')

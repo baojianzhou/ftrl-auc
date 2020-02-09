@@ -30,7 +30,7 @@ static PyObject *test(PyObject *self, PyObject *args) {
 PyObject *get_results(int data_p, AlgoResults *re) {
     PyObject *results = PyTuple_New(6);
     PyObject *wt = PyList_New(data_p);
-    PyObject *auc = PyList_New(re->auc_len);
+    PyObject *aucs = PyList_New(re->auc_len);
     PyObject *rts = PyList_New(re->auc_len);
     PyObject *iters = PyList_New(re->auc_len);
     PyObject *online_aucs = PyList_New(re->auc_len);
@@ -39,7 +39,7 @@ PyObject *get_results(int data_p, AlgoResults *re) {
         PyList_SetItem(wt, i, PyFloat_FromDouble(re->wt[i]));
     }
     for (int i = 0; i < re->auc_len; i++) {
-        PyList_SetItem(auc, i, PyFloat_FromDouble(re->te_aucs[i]));
+        PyList_SetItem(aucs, i, PyFloat_FromDouble(re->te_aucs[i]));
         PyList_SetItem(rts, i, PyFloat_FromDouble(re->rts[i]));
         PyList_SetItem(iters, i, PyFloat_FromDouble(re->iters[i]));
         PyList_SetItem(online_aucs, i, PyFloat_FromDouble(re->online_aucs[i]));
@@ -52,7 +52,7 @@ PyObject *get_results(int data_p, AlgoResults *re) {
     PyList_SetItem(metrics, 5, PyFloat_FromDouble(re->run_time));
     PyList_SetItem(metrics, 6, PyFloat_FromDouble(re->eval_time));
     PyTuple_SetItem(results, 0, wt);
-    PyTuple_SetItem(results, 1, auc);
+    PyTuple_SetItem(results, 1, aucs);
     PyTuple_SetItem(results, 2, rts);
     PyTuple_SetItem(results, 3, iters);
     PyTuple_SetItem(results, 4, online_aucs);

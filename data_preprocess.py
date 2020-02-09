@@ -272,7 +272,8 @@ def data_process_03_realsim(num_trials=10):
     return data
 
 
-def data_process_04_avazu(num_trials=1):
+def data_process_04_avazu(num_trials=10):
+    np.random.seed(17)
     # tr: 12,642,186
     # va: 1,953,951
     data = {'file_path': root_path + '04_avazu/raw_avazu',
