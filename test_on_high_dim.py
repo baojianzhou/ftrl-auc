@@ -534,17 +534,19 @@ def result_curves():
 
 def result_curves_huge(dataset='07_url'):
     import matplotlib.pyplot as plt
-    from matplotlib import rc
     from pylab import rcParams
-    plt.rcParams["font.family"] = "serif"
-    plt.rcParams["font.serif"] = "Times"
-    plt.rcParams["font.size"] = 16
-    rc('text', usetex=True)
-    rcParams['figure.figsize'] = 10, 4
-
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 14
+    rcParams['figure.figsize'] = 6, 4
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
-    fig, ax = plt.subplots(1, 2)
-    num_trials, list_trials = 5, [0, 1, 2, 3, 4, 9]
+    fig, ax = plt.subplots(1, 1)
+    # ax.grid(which='both', color='gray', linewidth=0.5, linestyle='dashed', axis='both')
+    num_trials, list_trials = 10, range(10)
+    marker_list = ['s', 'o']
+    color_list = ['r', 'g']
     for ind, method in enumerate(['ftrl_auc', 'ftrl_proximal']):
         results = dict()
         for _ in list_trials:
@@ -553,16 +555,19 @@ def result_curves_huge(dataset='07_url'):
             results[_] = {1: item[4], 2: item[5], 3: item[6]}
         aucs = np.mean(np.asarray([results[trial_i][1] for trial_i in list_trials]), axis=0)
         aucs_std = np.std(np.asarray([results[trial_i][1] for trial_i in list_trials]), axis=0)
-        rts = np.mean(np.asarray([results[trial_i][2] for trial_i in list_trials]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][3] for trial_i in list_trials]), axis=0)
-        print(aucs[:10], aucs_std[:10])
-        ax[0].plot(rts[:40], aucs[:40], label=label_method[ind])
-        ax[1].plot(iters[:40], aucs[:40], label=label_method[ind])
-    ax[0].set_ylabel('AUC')
-    ax[1].set_ylabel('AUC')
-    ax[0].set_xlabel('Run Time(seconds)')
-    ax[1].set_xlabel('Samples seen')
-    ax[0].legend()
+        ax.errorbar(x=iters[1:], y=aucs[1:], yerr=aucs_std[1:], marker=marker_list[ind], color=color_list[ind],
+                    markersize=5., markerfacecolor='w', markeredgewidth=1., label=label_method[ind])
+    ax.set_ylabel('AUC')
+    ax.set_xlabel('Samples seen')
+    ax.set_xticks([100, 1000, 10000, 100000, 1000000, 10000000])
+    ax.xaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
+    ax.set_ylim([0.40, 0.82])
+    ax.set_yticks([0.5, 0.6, 0.7, 0.8])
+    ax.yaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
+    ax.set_xscale('log')
+    ax.legend(fancybox=True, loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
+              labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/avazu-auc.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
@@ -1040,6 +1045,66 @@ def show_all_parameter_select():
     plt.close()
 
 
+def show_parameter_select_huge(dataset):
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 14
+    rcParams['figure.figsize'] = 5, 4
+    list_methods = ['ftrl_auc', 'ftrl_proximal']
+    label_list = [r'FTRL-AUC', r'\textsc{FTRL-Proximal}']
+    marker_list = ['s', 'o']
+    color_list = ['r', 'g']
+    fig, ax = plt.subplots(1, 1)
+    num_trials = 10
+    for ind, method in enumerate(list_methods):
+        print(method)
+        results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+        if method == 'ftrl_auc':
+            para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+            for result in results:
+                trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_l1 in enumerate(para_l1_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            ax.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+        elif method == 'ftrl_proximal':
+            para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                            1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+            auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+            sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+            for result in results:
+                trial_i, (para_l1, para_l2, para_beta, para_gamma), \
+                cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                for ind_l1, para_l1 in enumerate(para_l1_list):
+                    auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][1]
+                    sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][3]
+            xx = np.mean(auc_matrix, axis=0)
+            yy = np.mean(sparse_ratio_mat, axis=0)
+            ax.plot(xx, yy, marker=marker_list[ind], markersize=4.0, markerfacecolor='w',
+                    markeredgewidth=.7, linewidth=0.5, label=label_list[ind], color=color_list[ind])
+    ax.set_xlabel('AUC')
+    ax.set_ylabel('$\displaystyle \lambda $')
+    ax.set_yscale('log')
+    ax.set_xticks([0.7, 0.72, 0.74, 0.76, 0.78, 0.80])
+    ax.set_xticklabels([0.7, 0.72, 0.74, 0.76, 0.78, 0.80])
+    plt.subplots_adjust(wspace=0.27, hspace=0.2)
+    ax.legend(fancybox=True, loc='upper left', framealpha=1.0, frameon=False, borderpad=0.1,
+              labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/para-select-avazu.pdf'
+    plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
@@ -1069,6 +1134,8 @@ if __name__ == '__main__':
         result_statistics_huge(dataset=sys.argv[2])
     elif sys.argv[1] == 'show_curves_huge':
         result_curves_huge(dataset=sys.argv[2])
+    elif sys.argv[1] == 'show_para_select_huge':
+        show_parameter_select_huge(dataset=sys.argv[2])
     elif sys.argv[1] == 'all_converge_curves':
         result_all_converge_curves()
     elif sys.argv[1] == 'all_converge_curves_iter':
