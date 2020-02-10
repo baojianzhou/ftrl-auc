@@ -791,7 +791,7 @@ def result_all_converge_curves_iter():
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(2, 3)
     for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+        ax[i, j].grid(color='black', linewidth=0.8, linestyle='dashed')
     num_trials = 10
     title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
     for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
@@ -808,29 +808,47 @@ def result_all_converge_curves_iter():
         ax[ii, 0].set_ylabel('AUC')
         ax[1, jj].set_xlabel('Samples Seen')
         ax[ii, jj].set_title(title_list[data_ind])
-    ax[0, 0].set_ylim([0.68, 1.02])
-    ax[0, 0].set_yticks([0.7, 0.80, 0.9, 1.0])
-    ax[0, 0].set_yticklabels([0.7, 0.80, 0.9, 1.0])
-    ax[0, 1].set_ylim([0.5, 0.92])
-    ax[0, 1].set_yticks([0.6, 0.7, 0.8, 0.9])
+    ax[0, 0].set_ylim([0.78, 1.01])
+    ax[0, 0].set_yticks([0.8, 0.85, 0.9, 0.95])
+    ax[0, 0].set_yticklabels([0.8, 0.85, 0.9, 0.95])
+    ax[0, 0].set_xticks([0, 12000, 24000, 36000])
+    ax[0, 0].set_xticklabels([0, 12000, 24000, 36000])
+
+    ax[0, 1].set_ylim([0.48, 0.92])
+    ax[0, 1].set_yticks([0.5, 0.63, 0.76, 0.89])
     ax[0, 1].set_yticklabels([0.6, 0.7, 0.8, 0.9])
-    ax[0, 2].set_ylim([0.75, 1.02])
-    ax[0, 2].set_yticks([0.8, 0.85, 0.90, 0.95, 1.0])
-    ax[0, 2].set_yticklabels([0.8, 0.85, 0.90, 0.95, 1.0])
+    ax[0, 1].set_xticks([0, 450, 900, 1350])
+    ax[0, 1].set_xticklabels([0, 450, 900, 1350])
+
+    ax[0, 2].set_ylim([0.78, 1.02])
+    ax[0, 2].set_yticks([0.8, 0.86, 0.92, 0.98])
+    ax[0, 2].set_yticklabels([0.8, 0.86, 0.92, 0.98])
+    ax[0, 2].set_xticks([0, 80000, 160000, 240000])
+    ax[0, 2].set_xticklabels([0, 80000, 160000, 240000])
+
     ax[1, 0].set_ylim([0.5, 0.95])
     ax[1, 0].set_yticks([0.6, 0.7, 0.8, 0.9])
     ax[1, 0].set_yticklabels([0.6, 0.7, 0.8, 0.9])
-    ax[1, 1].set_ylim([0.6, 1.02])
-    ax[1, 1].set_yticks([0.7, 0.8, 0.9, 1.0])
+    ax[1, 0].set_xticks([0, 6000, 12000, 18000])
+    ax[1, 0].set_xticklabels([0, 6000, 12000, 18000])
+
+    ax[1, 1].set_ylim([0.6, 0.92])
+    ax[1, 1].set_yticks([0.62, 0.71, 0.80, 0.89])
     ax[1, 1].set_yticklabels([0.7, 0.8, 0.9, 1.0])
-    ax[1, 2].set_ylim([0.75, 1.02])
-    ax[1, 2].set_yticks([0.8, 0.85, 0.90, 0.95])
+    ax[1, 1].set_xticks([0, 900, 1800, 2700])
+    ax[1, 1].set_xticklabels([0, 900, 1800, 2700])
+
+    ax[1, 2].set_ylim([0.78, 1.02])
+    ax[1, 2].set_yticks([0.8, 0.86, 0.92, 0.98])
     ax[1, 2].set_yticklabels([0.8, 0.85, 0.90, 0.95])
+    ax[1, 2].set_xticks([0, 2500, 5000, 7500])
+    ax[1, 2].set_xticklabels([0, 2500, 5000, 7500])
+
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
     ax[0, 0].legend(loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
                     labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
-             'curves-all-imbalance-%.2f-iter.pdf' % imbalance_ratio
+             'curves-all-imbalance-0-1-iter.pdf'
     fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
@@ -845,13 +863,12 @@ def show_all_parameter_select():
     plt.rcParams["font.size"] = 18
     rcParams['figure.figsize'] = 16, 8.5
     list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
-    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
-                  r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
+    label_list = [r'FTRL-AUC', r'\textsc{AdaGrad}', r'RDA-$\displaystyle \ell^1$', r'FTRL-Proximal']
     marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(2, 3)
     for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+        ax[i, j].grid(color='black', linewidth=0.8, linestyle='dashed')
     num_trials = 10
     imbalance_ratio = 0.1
     title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
@@ -860,7 +877,8 @@ def show_all_parameter_select():
         ii, jj = data_ind / 3, data_ind % 3
         for ind, method in enumerate(list_methods):
             print(method)
-            results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
+            results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%0.1f.pkl' %
+                                    (dataset, dataset, method, imbalance_ratio)))
             if method == 'ftrl_auc':
                 para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                                 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
@@ -873,40 +891,44 @@ def show_all_parameter_select():
                         sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][3]
                 xx = np.mean(auc_matrix, axis=0)
                 yy = np.mean(sparse_ratio_mat, axis=0)
-            elif method == 'spam_l1':
+            elif method == 'adagrad':
                 para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                                 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
                 auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
                 sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
                 for result in results:
-                    trial_i, (para_xi, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
-                    for ind_l1, para_l1 in enumerate(para_l1_list):
-                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1)][1]
-                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1)][3]
+                    trial_i, (para_lambda, para_eta, para_epsilon), \
+                    cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_lambda in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_eta, para_epsilon)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_eta, para_epsilon)][3]
                 xx = np.mean(auc_matrix, axis=0)
                 yy = np.mean(sparse_ratio_mat, axis=0)
-            elif method == 'spam_l1l2':
+            elif method == 'rda_l1':
                 para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                                 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
                 auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
                 sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
                 for result in results:
-                    trial_i, (para_xi, para_l1, para_l2), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
-                    for ind_l1, para_l1 in enumerate(para_l1_list):
-                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1, para_l2)][1]
-                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_xi, para_l1, para_l2)][3]
+                    trial_i, (para_lambda, para_gamma, para_rho), \
+                    cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_lambda in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_gamma, para_rho)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_gamma, para_rho)][3]
                 xx = np.mean(auc_matrix, axis=0)
                 yy = np.mean(sparse_ratio_mat, axis=0)
-            else:  # spauc
+            else:  # ftrl_proximal
                 para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
                                 1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
                 auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
                 sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
                 for result in results:
-                    trial_i, (para_mu, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    trial_i, (para_l1, para_l2, para_beta, para_gamma), \
+                    cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
                     for ind_l1, para_l1 in enumerate(para_l1_list):
-                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][1]
-                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][3]
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][
+                            3]
                 xx = np.mean(auc_matrix, axis=0)
                 yy = np.mean(sparse_ratio_mat, axis=0)
             ax[ii, jj].plot(xx, yy, marker=marker_list[ind], markersize=6.0, markerfacecolor='w',
@@ -916,10 +938,10 @@ def show_all_parameter_select():
             ax[ii, jj].set_yscale('log')
             ax[ii, jj].set_title(title_list[data_ind])
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[0, 0].legend(fancybox=True, loc='upper left', framealpha=1.0, frameon=True, borderpad=0.1,
+    ax[0, 2].legend(fancybox=True, loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
                     labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
-             'para-select-all-imbalance-%.1f.pdf' % imbalance_ratio
+             'para-select-all-imbalance-0-1.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
