@@ -544,18 +544,18 @@ def result_curves_huge(dataset='07_url'):
 
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
     fig, ax = plt.subplots(1, 2)
-    num_trials = 7
+    num_trials, list_trials = 5, [0, 1, 2, 3, 4, 9]
     for ind, method in enumerate(['ftrl_auc', 'ftrl_proximal']):
         results = dict()
-        for _ in range(num_trials):
+        for _ in list_trials:
             item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl' %
                                  (dataset, dataset, method, _)))
             results[_] = {1: item[4], 2: item[5], 3: item[6]}
-        aucs = np.mean(np.asarray([results[trial_i][1] for trial_i in range(num_trials)]), axis=0)
-        aucs_std = np.std(np.asarray([results[trial_i][1] for trial_i in range(num_trials)]), axis=0)
-        rts = np.mean(np.asarray([results[trial_i][2] for trial_i in range(num_trials)]), axis=0)
-        iters = np.mean(np.asarray([results[trial_i][3] for trial_i in range(num_trials)]), axis=0)
-        print(aucs[:10],aucs_std[:10])
+        aucs = np.mean(np.asarray([results[trial_i][1] for trial_i in list_trials]), axis=0)
+        aucs_std = np.std(np.asarray([results[trial_i][1] for trial_i in list_trials]), axis=0)
+        rts = np.mean(np.asarray([results[trial_i][2] for trial_i in list_trials]), axis=0)
+        iters = np.mean(np.asarray([results[trial_i][3] for trial_i in list_trials]), axis=0)
+        print(aucs[:10], aucs_std[:10])
         ax[0].plot(rts[:40], aucs[:40], label=label_method[ind])
         ax[1].plot(iters[:40], aucs[:40], label=label_method[ind])
     ax[0].set_ylabel('AUC')
