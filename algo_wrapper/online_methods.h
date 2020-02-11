@@ -35,6 +35,8 @@ typedef struct {
     double total_time;
     double te_auc;
     double va_auc;
+    double *te_fpr;
+    double *te_tpr;
     int nonzero_wt;
     double sparse_ratio;
 } AlgoResults;

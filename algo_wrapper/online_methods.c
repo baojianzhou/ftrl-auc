@@ -49,6 +49,8 @@ AlgoResults *make_algo_results(int data_p, int total_num_eval) {
     re->rts = calloc((size_t) total_num_eval, sizeof(double));
     re->iters = calloc((size_t) total_num_eval, sizeof(int));
     re->scores = calloc((size_t) total_num_eval, sizeof(double));
+    re->te_fpr = malloc(sizeof(double) * (total_num_eval + 1));
+    re->te_tpr = malloc(sizeof(double) * (total_num_eval + 1));
     re->auc_len = 0;
     return re;
 }
@@ -62,6 +64,8 @@ bool free_algo_results(AlgoResults *re) {
     free(re->te_aucs);
     free(re->wt);
     free(re->scores);
+    free(re->te_fpr);
+    free(re->te_tpr);
     free(re);
     return true;
 }
@@ -79,6 +83,47 @@ bool free_algo_results(AlgoResults *re) {
 double _auc_score(const double *true_labels, const double *scores, int len) {
     double *fpr = malloc(sizeof(double) * (len + 1));
     double *tpr = malloc(sizeof(double) * (len + 1));
+    double num_posi = 0.0;
+    double num_nega = 0.0;
+    for (int i = 0; i < len; i++) {
+        if (true_labels[i] > 0) {
+            num_posi++;
+        } else {
+            num_nega++;
+        }
+    }
+    int *sorted_indices = malloc(sizeof(int) * len);
+    _arg_sort_descend(scores, sorted_indices, len);
+    tpr[0] = 0.0; // initial point.
+    fpr[0] = 0.0; // initial point.
+    // accumulate sum
+    for (int i = 0; i < len; i++) {
+        double cur_label = true_labels[sorted_indices[i]];
+        if (cur_label > 0) {
+            fpr[i + 1] = fpr[i];
+            tpr[i + 1] = tpr[i] + 1.0;
+        } else {
+            fpr[i + 1] = fpr[i] + 1.0;
+            tpr[i + 1] = tpr[i];
+        }
+    }
+    cblas_dscal(len, 1. / num_posi, tpr, 1);
+    cblas_dscal(len, 1. / num_nega, fpr, 1);
+    // AUC score
+    double auc = 0.0;
+    double prev = 0.0;
+    for (int i = 0; i < len; i++) {
+        auc += (tpr[i] * (fpr[i] - prev));
+        prev = fpr[i];
+    }
+    free(sorted_indices);
+    free(fpr);
+    free(tpr);
+    return auc;
+}
+
+double _auc_roc_curves(const double *true_labels, const double *scores,
+                       double *fpr, double *tpr, int len) {
     double num_posi = 0.0;
     double num_nega = 0.0;
     for (int i = 0; i < len; i++) {
