@@ -8,7 +8,6 @@ from os.path import join
 from itertools import product
 
 import numpy as np
-from data_preprocess import data_process_01_webspam
 from data_preprocess import data_process_02_news20b
 from data_preprocess import data_process_03_realsim
 from data_preprocess import data_process_04_avazu
@@ -16,7 +15,6 @@ from data_preprocess import data_process_05_rcv1_bin
 from data_preprocess import data_process_07_url
 from data_preprocess import data_process_06_pcmac
 from data_preprocess import data_process_08_farmads
-from data_preprocess import data_process_09_kdd2010
 from data_preprocess import data_process_10_imdb
 from data_preprocess import data_process_11_reviews
 
