@@ -12,7 +12,6 @@ from data_preprocess import data_process_02_news20b
 from data_preprocess import data_process_03_realsim
 from data_preprocess import data_process_04_avazu
 from data_preprocess import data_process_05_rcv1_bin
-from data_preprocess import data_process_07_url
 from data_preprocess import data_process_06_pcmac
 from data_preprocess import data_process_08_farmads
 from data_preprocess import data_process_10_imdb
@@ -308,8 +307,6 @@ def run_high_dimensional(method, dataset, num_cpus):
         data = data_process_05_rcv1_bin()
     elif dataset == '06_pcmac':
         data = data_process_06_pcmac()
-    elif dataset == '07_url':
-        data = data_process_07_url()
     elif dataset == '08_farmads':
         data = data_process_08_farmads()
     elif dataset == '10_imdb':
@@ -399,31 +396,6 @@ def run_high_dimensional(method, dataset, num_cpus):
     pool.close()
     pool.join()
     pkl.dump(ms_res, open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method), 'wb'))
-
-
-def run_huge_dimensional(method, dataset, task_id):
-    if dataset == '07_url':
-        data = data_process_07_url()
-    elif dataset == '04_avazu':
-        data = data_process_04_avazu()
-    else:
-        f_name = root_path + '%s/processed_%s.pkl' % (dataset, dataset)
-        data = pkl.load(open(f_name))
-    trial_i = int(task_id)
-    if method == 'ftrl_auc':
-        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
-        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
-                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
-        ms_res = cv_ftrl_auc((data, para_gamma_list, para_l1_list, trial_i))
-    elif method == 'ftrl_proximal':
-        para_gamma_list = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0, 5e0]
-        para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
-                        1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
-        ms_res = cv_ftrl_proximal((data, para_gamma_list, para_l1_list, trial_i))
-    else:
-        ms_res = None
-    f_name = root_path + '%s/re_%s_%s_%d.pkl' % (dataset, dataset, method, task_id)
-    pkl.dump(ms_res, open(f_name, 'wb'))
 
 
 def result_statistics(dataset):
@@ -530,20 +502,20 @@ def result_curves():
     plt.show()
 
 
-def result_curves_huge(dataset='07_url'):
+def result_curves_huge(dataset):
     import matplotlib.pyplot as plt
     from pylab import rcParams
     plt.rcParams['text.usetex'] = True
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 14
+    plt.rcParams["font.size"] = 16
     rcParams['figure.figsize'] = 6, 4
     label_method = ['FTRL-AUC', 'FTRL-Proximal']
     fig, ax = plt.subplots(1, 1)
     # ax.grid(which='both', color='gray', linewidth=0.5, linestyle='dashed', axis='both')
     num_trials, list_trials = 10, range(10)
-    marker_list = ['s', 'o']
+    marker_list = ['s', 'D']
     color_list = ['r', 'g']
     for ind, method in enumerate(['ftrl_auc', 'ftrl_proximal']):
         results = dict()
@@ -554,17 +526,21 @@ def result_curves_huge(dataset='07_url'):
         aucs = np.mean(np.asarray([results[trial_i][1] for trial_i in list_trials]), axis=0)
         aucs_std = np.std(np.asarray([results[trial_i][1] for trial_i in list_trials]), axis=0)
         iters = np.mean(np.asarray([results[trial_i][3] for trial_i in list_trials]), axis=0)
-        ax.errorbar(x=iters[1:], y=aucs[1:], yerr=aucs_std[1:], marker=marker_list[ind], color=color_list[ind],
-                    markersize=5., markerfacecolor='w', markeredgewidth=1., label=label_method[ind])
+        ax.plot(iters[1:], aucs[1:], color=color_list[ind], alpha=1.0, linewidth=1.0,
+                marker=marker_list[ind], markersize=3., label=label_method[ind])
+        ax.fill_between(iters[1:], aucs[1:] - aucs_std[1:], aucs[1:] + aucs_std[1:],
+                        color=color_list[ind], alpha=0.4, lw=0)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
     ax.set_ylabel('AUC')
     ax.set_xlabel('Samples seen')
     ax.set_xticks([100, 1000, 10000, 100000, 1000000, 10000000])
-    ax.xaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
+    # ax.xaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
     ax.set_ylim([0.40, 0.82])
     ax.set_yticks([0.5, 0.6, 0.7, 0.8])
-    ax.yaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
+    # ax.yaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
     ax.set_xscale('log')
-    ax.legend(fancybox=True, loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
+    ax.legend(fancybox=True, loc='lower right', framealpha=0.0, frameon=None, borderpad=0.1,
               labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/avazu-auc.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
@@ -1108,10 +1084,6 @@ if __name__ == '__main__':
         run_high_dimensional(method=sys.argv[2],
                              dataset=sys.argv[3],
                              num_cpus=int(sys.argv[4]))
-    elif sys.argv[1] == 'run_huge':
-        run_huge_dimensional(method=sys.argv[2],
-                             dataset=sys.argv[3],
-                             task_id=int(sys.argv[4]))
     elif sys.argv[1] == 'run_merge':
         dataset = sys.argv[2]
         for method in ['ftrl_auc', 'ftrl_proximal']:
