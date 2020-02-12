@@ -1049,9 +1049,9 @@ def show_case_2():
 
 
 def main():
-    # get_single_test(dataset='05_rcv1_bin')
+    get_single_test(dataset='05_rcv1_bin')
     # get_single_test(dataset='11_reviews')
-    show_case_2()
+    # show_case_2()
 
 
 if __name__ == '__main__':
