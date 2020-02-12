@@ -972,8 +972,8 @@ def show_case_1():
 def show_case_2():
     import matplotlib.pyplot as plt
     # get_single_test(dataset='02_news20b')
-    get_single_test(dataset='05_rcv1_bin')
-    get_single_test(dataset='11_reviews')
+    # get_single_test(dataset='05_rcv1_bin')
+    # get_single_test(dataset='11_reviews')
     from pylab import rcParams
     plt.rcParams['text.usetex'] = True
     plt.rc('text', usetex=True)
@@ -987,7 +987,7 @@ def show_case_2():
         ax[i].spines['right'].set_visible(False)
         ax[i].spines['top'].set_visible(False)
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
-        pkl.load(open(root_path + 'test_lazy_10_imdb.pkl'))
+        pkl.load(open(root_path + 'test_lazy_02_news20b.pkl'))
     ax[0].plot(iters[1:], mean_lazy[1:], c='r', label='With Lazy Rule', alpha=0.8)
     ax[0].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
@@ -997,7 +997,7 @@ def show_case_2():
     # ax[0].set_xscale('log')
     print(np.mean(aver_time1), np.std(aver_time1), np.mean(aver_time2), np.std(aver_time2))
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
-        pkl.load(open(root_path + 'test_lazy_03_real_sim.pkl'))
+        pkl.load(open(root_path + 'test_lazy_11_reviews.pkl'))
     print(np.mean(aver_time1), np.std(aver_time1), np.mean(aver_time2), np.std(aver_time2))
     ax[1].plot(iters[1:], mean_lazy[1:], c='r', label='With Lazy Rule', alpha=0.8)
     ax[1].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
@@ -1006,7 +1006,7 @@ def show_case_2():
     ax[1].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
-        pkl.load(open(root_path + 'test_lazy_08_farmads.pkl'))
+        pkl.load(open(root_path + 'test_lazy_11_reviews.pkl'))
     ax[2].plot(iters[1:], mean_lazy[1:], c='r', label='With Lazy Rule', alpha=0.8)
     ax[2].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
@@ -1016,15 +1016,15 @@ def show_case_2():
     # ax[1].set_xscale('log')
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
     ax[0].set_ylabel('AUC')
-    ax[0].set_title('imdb')
-    ax[0].set_xticks([0, 10000, 20000, 30000])
-    ax[0].set_xticklabels([0, 10000, 20000, 30000])
-    ax[0].set_ylim([0.55, 0.95])
-    ax[0].set_yticks([0.6, 0.7, 0.8, 0.9])
-    ax[0].set_yticklabels([0.6, 0.7, 0.8, 0.9])
+    ax[0].set_title('news20b')
+    ax[0].set_xticks([0, 4000, 8000, 12000])
+    ax[0].set_xticklabels([0, 4000, 8000, 12000])
+    ax[0].set_ylim([0.75, 1.0])
+    ax[0].set_yticks([0.8, 0.85, 0.9, 0.95])
+    ax[0].set_yticklabels([0.8, 0.85, 0.9, 0.95])
     ax[0].set_xlabel('Samples Seen')
 
-    ax[1].set_title('real-sim')
+    ax[1].set_title('rcv1b')
     ax[1].set_xticks([0, 15000, 30000, 45000])
     ax[1].set_xticklabels([0, 15000, 30000, 45000])
     ax[1].set_ylim([0.61, 0.99])
@@ -1032,10 +1032,10 @@ def show_case_2():
     ax[1].set_yticklabels([0.7, 0.8, 0.9])
     ax[1].set_xlabel("Samples Seen")
 
-    ax[2].set_title('farm-ads')
-    ax[2].set_xticks([0, 800, 1600, 2400])
-    ax[2].set_xticklabels([0, 800, 1600, 2400])
-    ax[2].set_ylim([0.62, 0.98])
+    ax[2].set_title('reviews')
+    ax[2].set_xticks([0, 1500, 3000, 4500])
+    ax[2].set_xticklabels([0, 1500, 3000, 4500])
+    ax[2].set_ylim([0.65, 0.95])
     ax[2].set_yticks([0.7, 0.8, 0.9])
     ax[2].set_yticklabels([0.7, 0.8, 0.9])
     ax[2].set_xlabel("Samples Seen")
@@ -1043,15 +1043,15 @@ def show_case_2():
     ax[1].legend(fancybox=True, loc='lower right', framealpha=0.0, frameon=None, borderpad=0.1, ncol=2,
                  bbox_to_anchor=(1.5, -0.45), labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
-             'compare-figure.pdf'
+             'compare-figure-2.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
 
 def main():
-    get_single_test(dataset='05_rcv1_bin')
-    get_single_test(dataset='11_reviews')
-    # show_case_2()
+    # get_single_test(dataset='05_rcv1_bin')
+    # get_single_test(dataset='11_reviews')
+    show_case_2()
 
 
 if __name__ == '__main__':
