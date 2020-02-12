@@ -1112,7 +1112,7 @@ void _algo_ftrl_auc(Data *data,
     _cal_sparse_ratio(re, data->p);
     re->va_auc = _eval_auc(data, re, true);
     re->te_auc = _eval_auc(data, re, false);
-    if (paras->verbose > 0) {
+    if (paras->verbose == 0) {
         printf("\n-------------------------------------------------------\n");
         printf("p: %d num_tr: %d num_va: %d num_te: %d\n",
                data->p, data->n_tr, data->n_va, data->n_te);

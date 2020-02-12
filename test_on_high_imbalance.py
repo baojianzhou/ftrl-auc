@@ -59,6 +59,7 @@ def get_from_spam_l2(dataset, num_trials):
 
 
 def cv_ftrl_auc(input_para):
+    print('test')
     data, gamma_list, para_l1_list, trial_i = input_para
     best_auc, best_para, cv_res = None, None, dict()
     para_l2, para_beta = 0.0, 1.
@@ -946,7 +947,7 @@ def show_all_parameter_select():
     plt.close()
 
 
-if __name__ == '__main__':
+def main():
     imbalance_ratio = 0.05
     if sys.argv[1] == 'run':
         run_high_dimensional(method=sys.argv[2],
@@ -1027,3 +1028,7 @@ if __name__ == '__main__':
                 sparse_ratios.append('$\pm$'.join([a, b]))
             print('sparse-ratio: '),
             print(' & '.join(sparse_ratios))
+
+
+if __name__ == '__main__':
+    main()
