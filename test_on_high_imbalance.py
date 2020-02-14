@@ -420,7 +420,7 @@ def result_curves_huge(dataset='07_url'):
     rc('text', usetex=True)
     rcParams['figure.figsize'] = 10, 4
 
-    label_method = ['FTRL-AUC', 'FTRL-Proximal']
+    label_method = [r'\textsc{FTRL-AUC}', r'\textsc{FTRL-Pro}']
     fig, ax = plt.subplots(1, 2)
     num_trials = 1
     for ind, method in enumerate(['ftrl_fast', 'ftrl_proximal']):
@@ -775,108 +775,39 @@ def result_all_converge_curves():
     plt.close()
 
 
-def result_all_converge_curves_iter():
-    import matplotlib.pyplot as plt
-    from pylab import rcParams
-    plt.rcParams['text.usetex'] = True
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 18
-    rcParams['figure.figsize'] = 16, 8.5
-    imbalance_ratio = 0.1
-    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
-    label_list = [r'FTRL-AUC', r'\textsc{AdaGrad}', r'RDA-$\displaystyle \ell^1$', r'FTRL-Proximal']
-    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
-    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
-    fig, ax = plt.subplots(2, 3)
-    for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='black', linewidth=0.8, linestyle='dashed')
+def get_data_fig6():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
     num_trials = 10
-    title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
+    data_fig6 = dict()
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
     for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
                                         '10_imdb', '11_reviews', '02_news20b']):
+        data_fig6[dataset] = dict()
         ii, jj = data_ind / 3, data_ind % 3
+        data_fig6[dataset][(ii, jj)] = dict()
         for ind, method in enumerate(list_methods):
-            print(method)
-            results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%.1f.pkl'
-                                    % (dataset, dataset, method, imbalance_ratio)))
+            print(dataset, method)
+            results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_0.1.pkl' % (dataset, dataset, method)))
             aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
             rts = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
-            ax[ii, jj].plot(rts, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
-                            markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
-        ax[ii, 0].set_ylabel('AUC')
-        ax[1, jj].set_xlabel('Samples Seen')
-        ax[ii, jj].set_title(title_list[data_ind])
-    ax[0, 0].set_ylim([0.78, 1.01])
-    ax[0, 0].set_yticks([0.8, 0.85, 0.9, 0.95])
-    ax[0, 0].set_yticklabels([0.8, 0.85, 0.9, 0.95])
-    ax[0, 0].set_xticks([0, 12000, 24000, 36000])
-    ax[0, 0].set_xticklabels([0, 12000, 24000, 36000])
-
-    ax[0, 1].set_ylim([0.48, 0.92])
-    ax[0, 1].set_yticks([0.5, 0.63, 0.76, 0.89])
-    ax[0, 1].set_yticklabels([0.6, 0.7, 0.8, 0.9])
-    ax[0, 1].set_xticks([0, 450, 900, 1350])
-    ax[0, 1].set_xticklabels([0, 450, 900, 1350])
-
-    ax[0, 2].set_ylim([0.78, 1.02])
-    ax[0, 2].set_yticks([0.8, 0.86, 0.92, 0.98])
-    ax[0, 2].set_yticklabels([0.8, 0.86, 0.92, 0.98])
-    ax[0, 2].set_xticks([0, 80000, 160000, 240000])
-    ax[0, 2].set_xticklabels([0, 80000, 160000, 240000])
-
-    ax[1, 0].set_ylim([0.5, 0.95])
-    ax[1, 0].set_yticks([0.6, 0.7, 0.8, 0.9])
-    ax[1, 0].set_yticklabels([0.6, 0.7, 0.8, 0.9])
-    ax[1, 0].set_xticks([0, 6000, 12000, 18000])
-    ax[1, 0].set_xticklabels([0, 6000, 12000, 18000])
-
-    ax[1, 1].set_ylim([0.6, 0.92])
-    ax[1, 1].set_yticks([0.62, 0.71, 0.80, 0.89])
-    ax[1, 1].set_yticklabels([0.7, 0.8, 0.9, 1.0])
-    ax[1, 1].set_xticks([0, 900, 1800, 2700])
-    ax[1, 1].set_xticklabels([0, 900, 1800, 2700])
-
-    ax[1, 2].set_ylim([0.78, 1.02])
-    ax[1, 2].set_yticks([0.8, 0.86, 0.92, 0.98])
-    ax[1, 2].set_yticklabels([0.8, 0.85, 0.90, 0.95])
-    ax[1, 2].set_xticks([0, 2500, 5000, 7500])
-    ax[1, 2].set_xticklabels([0, 2500, 5000, 7500])
-
-    plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[0, 0].legend(loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
-                    labelspacing=0.2, handletextpad=0.1, markerfirst=True)
-    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
-             'curves-all-imbalance-0-1-iter.pdf'
-    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
-    plt.close()
+            data_fig6[dataset][(ii, jj)][method] = [rts, aucs]
+    pkl.dump(data_fig6, open(path + '/results/data_fig6.pkl', 'wb'))
+    exit()
 
 
-def show_all_parameter_select():
-    import matplotlib.pyplot as plt
-    from pylab import rcParams
-    plt.rcParams['text.usetex'] = True
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 18
-    rcParams['figure.figsize'] = 16, 8.5
+def get_data_fig5():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
     list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
-    label_list = [r'FTRL-AUC', r'\textsc{AdaGrad}', r'RDA-$\displaystyle \ell^1$', r'FTRL-Proximal']
-    marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
-    color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
-    fig, ax = plt.subplots(2, 3)
-    for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='black', linewidth=0.8, linestyle='dashed')
     num_trials = 10
     imbalance_ratio = 0.1
-    title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
+    data_fig5 = dict()
     for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
                                         '10_imdb', '11_reviews', '02_news20b']):
+        data_fig5[dataset] = dict()
         ii, jj = data_ind / 3, data_ind % 3
+        data_fig5[dataset][(ii, jj)] = dict()
         for ind, method in enumerate(list_methods):
-            print(method)
+            print(dataset, method)
             results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%0.1f.pkl' %
                                     (dataset, dataset, method, imbalance_ratio)))
             if method == 'ftrl_auc':
@@ -931,17 +862,233 @@ def show_all_parameter_select():
                             3]
                 xx = np.mean(auc_matrix, axis=0)
                 yy = np.mean(sparse_ratio_mat, axis=0)
+            data_fig5[dataset][(ii, jj)][method] = [xx, yy]
+    pkl.dump(data_fig5, open(path + '/results/data_fig5.pkl', 'wb'))
+    exit()
+
+
+def get_data_fig10():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+    num_trials = 10
+    imbalance_ratio = 0.05
+    data_fig5 = dict()
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        data_fig5[dataset] = dict()
+        ii, jj = data_ind / 3, data_ind % 3
+        data_fig5[dataset][(ii, jj)] = dict()
+        for ind, method in enumerate(list_methods):
+            print(dataset, method)
+            results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_%0.1f.pkl' %
+                                    (dataset, dataset, method, imbalance_ratio)))
+            if method == 'ftrl_auc':
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_gamma, para_l1), cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_l1 in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_gamma, para_l1)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            elif method == 'adagrad':
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_lambda, para_eta, para_epsilon), \
+                    cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_lambda in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_eta, para_epsilon)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_eta, para_epsilon)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            elif method == 'rda_l1':
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_lambda, para_gamma, para_rho), \
+                    cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_lambda in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_gamma, para_rho)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_lambda, para_gamma, para_rho)][3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            else:  # ftrl_proximal
+                para_l1_list = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 5e-3, 1e-2, 5e-2,
+                                1e-1, 3e-1, 5e-1, 7e-1, 1e0, 3e0, 5e0]
+                auc_matrix = np.zeros(shape=(num_trials, len(para_l1_list)))
+                sparse_ratio_mat = np.zeros(shape=(num_trials, len(para_l1_list)))
+                for result in results:
+                    trial_i, (para_l1, para_l2, para_beta, para_gamma), \
+                    cv_res, wt, aucs, rts, iters, online_aucs, metrics = result
+                    for ind_l1, para_l1 in enumerate(para_l1_list):
+                        auc_matrix[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][1]
+                        sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_l1, para_l2, para_beta, para_gamma)][
+                            3]
+                xx = np.mean(auc_matrix, axis=0)
+                yy = np.mean(sparse_ratio_mat, axis=0)
+            data_fig5[dataset][(ii, jj)][method] = [xx, yy]
+    pkl.dump(data_fig5, open(path + '/results/data_fig10.pkl', 'wb'))
+    exit()
+
+
+def get_data_fig11():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
+    num_trials = 10
+    data_fig6 = dict()
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        data_fig6[dataset] = dict()
+        ii, jj = data_ind / 3, data_ind % 3
+        data_fig6[dataset][(ii, jj)] = dict()
+        for ind, method in enumerate(list_methods):
+            print(dataset, method)
+            results = pkl.load(open(root_path + '%s/re_%s_%s_imbalance_0.05.pkl' % (dataset, dataset, method)))
+            aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
+            rts = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
+            data_fig6[dataset][(ii, jj)][method] = [rts, aucs]
+    pkl.dump(data_fig6, open(path + '/results/data_fig11.pkl', 'wb'))
+    exit()
+
+
+def result_all_converge_curves_iter():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 20
+    rcParams['figure.figsize'] = 12, 7
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+    label_list = [r'FTRL-AUC', r'\textsc{AdaGrad}', r'RDA-$\displaystyle \ell^1$', r'\textsc{FTRL-Pro}']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(2, 3)
+    for i, j in product(range(2), range(3)):
+        ax[i, j].grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
+        ax[i, j].spines['right'].set_visible(False)
+        ax[i, j].spines['top'].set_visible(False)
+    data_fig6 = pkl.load(open('/home/baojian/Dropbox/pub/2020/KDD2020/results/data_fig11.pkl'))
+    title_list = ['(a) real-sim', '(b) farm-ads', '(c) rcv1b', '(d) imdb', '(e) reviews', '(f) news20b']
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        ii, jj = data_ind / 3, data_ind % 3
+        for ind, method in enumerate(list_methods):
+            iters, aucs = data_fig6[dataset][(ii, jj)][method]
+            ax[ii, jj].plot(iters, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
+                            markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
+        ax[ii, 0].set_ylabel('AUC')
+        ax[1, jj].set_xlabel('Samples Seen')
+        ax[ii, jj].set_title(title_list[data_ind])
+    ax[0, 0].set_ylim([0.76, 1.01])
+    ax[0, 0].set_yticks([0.82, 0.88, 0.94])
+    ax[0, 0].set_yticklabels([0.82, 0.88, 0.94])
+    ax[0, 0].set_xticks([10000, 20000, 30000])
+    ax[0, 0].set_xticklabels([10000, 20000, 30000])
+
+    ax[0, 1].set_ylim([0.55, 0.95])
+    ax[0, 1].set_yticks([0.65, 0.75, 0.85])
+    ax[0, 1].set_yticklabels([0.65, 0.75, 0.85])
+    ax[0, 1].set_xticks([400, 800, 1200])
+    ax[0, 1].set_xticklabels([400, 800, 1200])
+
+    ax[0, 2].set_ylim([0.76, 1.01])
+    ax[0, 2].set_yticks([0.82, 0.88, 0.94])
+    ax[0, 2].set_yticklabels([0.82, 0.88, 0.94])
+    ax[0, 2].set_xticks([40000, 120000, 200000])
+    ax[0, 2].set_xticklabels([40000, 120000, 200000])
+
+    ax[1, 0].set_ylim([0.55, 0.95])
+    ax[1, 0].set_yticks([0.65, 0.75, 0.85])
+    ax[1, 0].set_yticklabels([0.65, 0.75, 0.85])
+    ax[1, 0].set_xticks([5000, 10000, 15000])
+    ax[1, 0].set_xticklabels([5000, 10000, 15000])
+
+    ax[1, 1].set_ylim([0.64, 0.96])
+    ax[1, 1].set_yticks([0.70, 0.8, 0.90])
+    ax[1, 1].set_yticklabels([0.70, 0.8, 0.90])
+    ax[1, 1].set_xticks([800, 1600, 2400])
+    ax[1, 1].set_xticklabels([800, 1600, 2400])
+
+    ax[1, 2].set_ylim([0.76, 1.01])
+    ax[1, 2].set_yticks([0.82, 0.88, 0.94])
+    ax[1, 2].set_yticklabels([0.81, 0.87, 0.93])
+    ax[1, 2].set_xticks([2200, 4400, 6600])
+    ax[1, 2].set_xticklabels([2200, 4400, 6600])
+    plt.subplots_adjust(wspace=0.2, hspace=0.3)
+    ax[0, 0].legend(loc='lower right', framealpha=1.0, frameon=None, borderpad=0.1,
+                    labelspacing=0.2, handletextpad=0.1, markerfirst=True, fontsize=18)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
+             'curves-all-imbalance-0-05-iter.pdf'
+    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
+def show_all_parameter_select():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 20
+    rcParams['figure.figsize'] = 12, 7
+    list_methods = ['ftrl_auc', 'adagrad', 'rda_l1', 'ftrl_proximal']
+    label_list = [r'FTRL-AUC', r'\textsc{AdaGrad}', r'RDA-$\displaystyle \ell^1$', r'\textsc{FTRL-Pro}']
+    marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(2, 3)
+    for i, j in product(range(2), range(3)):
+        ax[i, j].grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
+        ax[i, j].spines['right'].set_visible(False)
+        ax[i, j].spines['top'].set_visible(False)
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
+    data_fig5 = pkl.load(open(path + '/results/data_fig10.pkl'))
+    title_list = ['(a) real-sim', '(b) farm-ads', '(c) rcv1b', '(d) imdb', '(e) reviews', '(f) news20b']
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        ii, jj = data_ind / 3, data_ind % 3
+        for ind, method in enumerate(list_methods):
+            xx, yy = data_fig5[dataset][(ii, jj)][method]
             ax[ii, jj].plot(xx, yy, marker=marker_list[ind], markersize=6.0, markerfacecolor='w',
                             markeredgewidth=1.5, linewidth=1.5, label=label_list[ind], color=color_list[ind])
-            ax[ii, 0].set_ylabel('Sparse-Ratio')
+            ax[ii, 0].set_ylabel('Sparse Ratio')
             ax[1, jj].set_xlabel('AUC')
             ax[ii, jj].set_yscale('log')
             ax[ii, jj].set_title(title_list[data_ind])
-    plt.subplots_adjust(wspace=0.15, hspace=0.2)
+    for i in range(3):
+        ax[0, i].set_ylim([0.0, 1.1])
+        ax[0, i].set_yticks([0.0001, 0.001, 0.01, 0.1])
+        ax[0, i].set_xlim([0.5, 1.0])
+        ax[0, i].set_xticks([0.6, 0.7, 0.8, 0.9])
+        ax[0, i].tick_params(labelbottom=False)
+    ax[0, 0].set_yticks([0.0001, 0.001, 0.01, 0.1])
+    ax[0, 1].tick_params(labelleft=False)
+    ax[0, 2].tick_params(labelleft=False)
+    ax[1, 0].set_yticks([0.0001, 0.001, 0.01, 0.1])
+    ax[1, 1].tick_params(labelleft=False)
+    ax[1, 2].tick_params(labelleft=False)
+
+    for i, j in product(range(2), range(3)):
+        ax[i, j].set_ylim([0.00001, 1.1])
+        ax[i, j].set_yticks([0.0001, 0.001, 0.01, 0.1])
+        ax[i, j].set_xlim([0.5, 1.0])
+        ax[i, j].set_xticks([0.6, 0.7, 0.8, 0.9])
+
+    plt.subplots_adjust(wspace=0.05, hspace=0.2)
     ax[0, 2].legend(fancybox=True, loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
-                    labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+                    labelspacing=0.2, handletextpad=0.1, markerfirst=True, fontsize=18)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
-             'para-select-all-imbalance-0-1.pdf'
+             'para-select-all-imbalance-0-05.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
 
@@ -1030,4 +1177,6 @@ def main():
 
 
 if __name__ == '__main__':
+    # get_data_fig10()
+    # get_data_fig11()
     main()

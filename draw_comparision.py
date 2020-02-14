@@ -149,18 +149,19 @@ def show_case_1():
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 16
+    plt.rcParams["font.size"] = 18
     rcParams['figure.figsize'] = 10, 3
     fig, ax = plt.subplots(1, 3)
     for i in range(3):
         ax[i].spines['right'].set_visible(False)
         ax[i].spines['top'].set_visible(False)
+        ax[i].grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
         pkl.load(open(root_path + 'test_lazy_10_imdb.pkl'))
-    ax[0].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With Lazy Rule', alpha=0.8)
+    ax[0].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update', alpha=0.8)
     ax[0].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
-    ax[0].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label=r"Without Lazy Rule", alpha=0.8)
+    ax[0].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label=r"Without lazy update", alpha=0.8)
     ax[0].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
     # ax[0].set_xscale('log')
@@ -168,26 +169,26 @@ def show_case_1():
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
         pkl.load(open(root_path + 'test_lazy_03_real_sim.pkl'))
     print(np.mean(aver_time1), np.std(aver_time1), np.mean(aver_time2), np.std(aver_time2))
-    ax[1].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update rule', alpha=0.8)
+    ax[1].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update', alpha=0.8)
     ax[1].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
-    ax[1].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update rule',
+    ax[1].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update',
                alpha=0.8)
     ax[1].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
         pkl.load(open(root_path + 'test_lazy_08_farmads.pkl'))
-    ax[2].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update rule', alpha=0.8)
+    ax[2].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update', alpha=0.8)
     ax[2].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
-    ax[2].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update rule',
+    ax[2].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update',
                alpha=0.8)
     ax[2].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
     # ax[1].set_xscale('log')
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
     ax[0].set_ylabel('AUC')
-    ax[0].set_title('imdb')
+    ax[0].set_title('(a) imdb')
     ax[0].set_xticks([0, 10000, 20000, 30000])
     ax[0].set_xticklabels([0, 10000, 20000, 30000])
     ax[0].set_ylim([0.65, 0.95])
@@ -195,7 +196,7 @@ def show_case_1():
     ax[0].set_yticklabels([0.7, 0.8, 0.9])
     ax[0].set_xlabel('Samples Seen')
 
-    ax[1].set_title('real-sim')
+    ax[1].set_title('(b) real-sim')
     ax[1].set_xticks([0, 15000, 30000, 45000])
     ax[1].set_xticklabels([0, 15000, 30000, 45000])
     ax[1].set_ylim([0.76, 0.99])
@@ -203,14 +204,14 @@ def show_case_1():
     ax[1].set_yticklabels([0.80, 0.85, 0.90, 0.95])
     ax[1].set_xlabel(r'Samples Seen')
 
-    ax[2].set_title('farm-ads')
+    ax[2].set_title('(c) farm-ads')
     ax[2].set_xticks([0, 800, 1600, 2400])
     ax[2].set_xticklabels([0, 800, 1600, 2400])
     ax[2].set_ylim([0.62, 0.98])
     ax[2].set_yticks([0.7, 0.8, 0.9])
     ax[2].set_yticklabels([0.7, 0.8, 0.9])
     ax[2].set_xlabel(r"Samples Seen")
-
+    plt.subplots_adjust(wspace=0.25, hspace=0.3)
     ax[1].legend(fancybox=True, loc='lower right', framealpha=0.0, frameon=None, borderpad=0.1, ncol=2,
                  bbox_to_anchor=(1.8, -0.45), labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/' \
@@ -230,18 +231,19 @@ def show_case_2():
     plt.rc('font', family='serif')
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
     # plt.rcParams['text.latex.preamble'] = '\usepackage{bm}'
-    plt.rcParams["font.size"] = 16
+    plt.rcParams["font.size"] = 18
     rcParams['figure.figsize'] = 10, 3
     fig, ax = plt.subplots(1, 3)
     for i in range(3):
         ax[i].spines['right'].set_visible(False)
         ax[i].spines['top'].set_visible(False)
+        ax[i].grid(color='lightgray', linewidth=0.5, linestyle='--', dashes=(10, 10))
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
         pkl.load(open(root_path + 'test_lazy_02_news20b.pkl'))
-    ax[0].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update rule', alpha=0.8)
+    ax[0].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update', alpha=0.8)
     ax[0].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
-    ax[0].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label=r"Without lazy update rule",
+    ax[0].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label=r"Without lazy update",
                alpha=0.8)
     ax[0].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
@@ -250,26 +252,26 @@ def show_case_2():
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
         pkl.load(open(root_path + 'test_lazy_05_rcv1_bin.pkl'))
     print(np.mean(aver_time1), np.std(aver_time1), np.mean(aver_time2), np.std(aver_time2))
-    ax[1].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update rule', alpha=0.8)
+    ax[1].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update', alpha=0.8)
     ax[1].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
-    ax[1].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update rule',
+    ax[1].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update',
                alpha=0.8)
     ax[1].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
     iters, mean_lazy, std_lazy, mean_non_lazy, std_non_lazy, aver_time1, aver_time2 = \
         pkl.load(open(root_path + 'test_lazy_11_reviews.pkl'))
-    ax[2].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update rule', alpha=0.8)
+    ax[2].plot(iters[1:], mean_lazy[1:], c='r', marker='s', markersize=2.5, label='With lazy update', alpha=0.8)
     ax[2].fill_between(iters[1:], mean_lazy[1:] - std_lazy[1:], mean_lazy[1:] + std_lazy[1:],
                        color='r', alpha=0.3)
-    ax[2].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update rule',
+    ax[2].plot(iters[1:], mean_non_lazy[1:], c='g', marker='D', markersize=2.5, label='Without lazy update',
                alpha=0.8)
     ax[2].fill_between(iters[1:], mean_non_lazy[1:] - std_non_lazy[1:],
                        mean_non_lazy[1:] + std_non_lazy[1:], color='g', alpha=0.3)
     # ax[1].set_xscale('log')
     plt.subplots_adjust(wspace=0.15, hspace=0.2)
     ax[0].set_ylabel('AUC')
-    ax[0].set_title('news20b')
+    ax[0].set_title('(a) news20b')
     ax[0].set_xticks([0, 4000, 8000, 12000])
     ax[0].set_xticklabels([0, 4000, 8000, 12000])
     ax[0].set_ylim([0.75, 1.0])
@@ -277,7 +279,7 @@ def show_case_2():
     ax[0].set_yticklabels([0.8, 0.85, 0.9, 0.95])
     ax[0].set_xlabel('Samples Seen')
 
-    ax[1].set_title('rcv1b')
+    ax[1].set_title('(b) rcv1b')
     ax[1].set_xticks([1000, 10000, 100000])
     ax[1].set_xticklabels([1000, 10000, 100000])
     ax[1].set_ylim([0.70, 1.01])
@@ -286,7 +288,7 @@ def show_case_2():
     ax[1].set_xscale('log')
     ax[1].set_xlabel("Samples Seen")
 
-    ax[2].set_title('reviews')
+    ax[2].set_title('(c) reviews')
     ax[2].set_xticks([0, 1500, 3000, 4500])
     ax[2].set_xticklabels([0, 1500, 3000, 4500])
     ax[2].set_ylim([0.65, 0.95])

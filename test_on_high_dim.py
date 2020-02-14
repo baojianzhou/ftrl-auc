@@ -509,15 +509,14 @@ def result_curves_huge(dataset):
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 16
+    plt.rcParams["font.size"] = 20
     rcParams['figure.figsize'] = 6, 4
-    label_method = ['FTRL-AUC', 'FTRL-Proximal']
+    label_method = [r'\textsc{FTRL-Pro}', r'\textsc{FTRL-AUC}']
     fig, ax = plt.subplots(1, 1)
-    # ax.grid(which='both', color='gray', linewidth=0.5, linestyle='dashed', axis='both')
     num_trials, list_trials = 10, range(10)
-    marker_list = ['s', 'D']
-    color_list = ['r', 'g']
-    for ind, method in enumerate(['ftrl_auc', 'ftrl_proximal']):
+    marker_list = ['D', 's']
+    color_list = ['g', 'r']
+    for ind, method in enumerate(['ftrl_proximal', 'ftrl_auc']):
         results = dict()
         for _ in list_trials:
             item = pkl.load(open(root_path + '%s/re_%s_%s_%d.pkl' %
@@ -530,17 +529,19 @@ def result_curves_huge(dataset):
                 marker=marker_list[ind], markersize=3., label=label_method[ind])
         ax.fill_between(iters[1:], aucs[1:] - aucs_std[1:], aucs[1:] + aucs_std[1:],
                         color=color_list[ind], alpha=0.4, lw=0)
+    ax.grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.set_ylabel('AUC')
     ax.set_xlabel('Samples seen')
-    ax.set_xticks([100, 1000, 10000, 100000, 1000000, 10000000])
-    # ax.xaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
+    ax.set_xscale('log')
+    ax.set_xlim([50, 10000000])
+    ax.set_xticks([1000, 10000, 100000, 1000000])
+    ax.set_xticklabels(["$\displaystyle 10^3$", "$\displaystyle 10^4$",
+                        "$\displaystyle 10^5$", "$\displaystyle 10^6$"])
     ax.set_ylim([0.40, 0.82])
     ax.set_yticks([0.5, 0.6, 0.7, 0.8])
-    # ax.yaxis.grid(True, which='major', color='gray', linewidth=0.5, linestyle='dashed')
-    ax.set_xscale('log')
-    ax.legend(fancybox=True, loc='lower right', framealpha=0.0, frameon=None, borderpad=0.1,
+    ax.legend(fancybox=True, loc='lower right', framealpha=1.0, frameon=None, borderpad=0.1,
               labelspacing=0.2, handletextpad=0.1, markerfirst=True)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/avazu-auc.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
@@ -734,8 +735,8 @@ def show_auc_curves(dataset):
     label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
                   r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
                   r'SOLAM', r'SPAUC', r'FSAUC']
-    list_methods = ['ftrl_auc', 'ftrl_proximal']
-    label_list = [r'FTRL-AUC', r'FTRL-Proximal']
+    list_methods = ['ftrl_proximal', 'ftrl_auc']
+    label_list = [r'FTRL-Proximal', r'FTRL-AUC']
     marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
     color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
     fig, ax = plt.subplots(1, 2, sharey=True)
@@ -814,146 +815,55 @@ def show_auc_curves_online(dataset):
     plt.close()
 
 
-def result_all_converge_curves():
-    import matplotlib.pyplot as plt
-    from pylab import rcParams
-    plt.rcParams['text.usetex'] = True
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 18
-    rcParams['figure.figsize'] = 16, 8.5
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
-                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
-                  r'SOLAM', r'SPAUC', r'FSAUC']
-    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
-    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
-    fig, ax = plt.subplots(2, 3)
-    for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+def get_data_fig3():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
     num_trials = 10
-    title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
+    data_fig3 = dict()
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
     for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
                                         '10_imdb', '11_reviews', '02_news20b']):
+        data_fig3[dataset] = dict()
         ii, jj = data_ind / 3, data_ind % 3
+        data_fig3[dataset][(ii, jj)] = dict()
         for ind, method in enumerate(list_methods):
-            print(method)
+            print(dataset, method)
             results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
             aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
             rts = np.mean(np.asarray([results[trial_i][5] for trial_i in range(num_trials)]), axis=0)
-            ax[ii, jj].plot(rts, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
-                            markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
-        ax[ii, 0].set_ylabel('AUC')
-        ax[1, jj].set_xlabel('Run Time (seconds)')
-        ax[ii, jj].set_title(title_list[data_ind])
-    ax[0, 0].set_ylim([0.85, 1.02])
-    ax[0, 0].set_yticks([0.85, 0.90, 0.95, 1.0])
-    ax[0, 0].set_yticklabels([0.85, 0.90, 0.95, 1.0])
-    ax[0, 1].set_ylim([0.6, 1.02])
-    ax[0, 1].set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[0, 1].set_yticklabels([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[0, 2].set_ylim([0.9, 1.02])
-    ax[0, 2].set_yticks([0.92, 0.94, 0.96, 0.98, 1.0])
-    ax[0, 2].set_yticklabels([0.92, 0.94, 0.96, 0.98, 1.0])
-    ax[1, 0].set_ylim([0.6, 1.02])
-    ax[1, 0].set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[1, 0].set_yticklabels([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[1, 1].set_ylim([0.6, 0.92])
-    ax[1, 1].set_yticks([0.6, 0.7, 0.8, 0.9])
-    ax[1, 1].set_yticklabels([0.6, 0.7, 0.8, 0.9])
-    ax[1, 2].set_ylim([0.7, 1.02])
-    ax[1, 2].set_yticks([0.7, 0.80, 0.90, 1.0])
-    ax[1, 2].set_yticklabels([0.7, 0.80, 0.90, 1.0])
-    plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[0, 0].legend(loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
-                    labelspacing=0.2, handletextpad=0.1, markerfirst=True)
-    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all.pdf'
-    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
-    plt.close()
+            data_fig3[dataset][(ii, jj)][method] = [rts, aucs]
+    pkl.dump(data_fig3, open(path + '/data_fig3.pkl', 'wb'))
 
 
-def result_all_converge_curves_iter():
-    import matplotlib.pyplot as plt
-    from pylab import rcParams
-    plt.rcParams['text.usetex'] = True
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 18
-    rcParams['figure.figsize'] = 16, 8.5
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
-    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
-                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
-                  r'SOLAM', r'SPAUC', r'FSAUC']
-    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
-    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
-    fig, ax = plt.subplots(2, 3)
-    for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+def get_data_fig8():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
     num_trials = 10
-    title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
+    data_fig8 = dict()
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
     for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
                                         '10_imdb', '11_reviews', '02_news20b']):
+        data_fig8[dataset] = dict()
         ii, jj = data_ind / 3, data_ind % 3
+        data_fig8[dataset][(ii, jj)] = dict()
         for ind, method in enumerate(list_methods):
-            print(method)
+            print(dataset, method)
             results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
             aucs = np.mean(np.asarray([results[trial_i][4] for trial_i in range(num_trials)]), axis=0)
-            iters = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
-            ax[ii, jj].plot(iters, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
-                            markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
-        ax[ii, 0].set_ylabel('AUC')
-        ax[1, jj].set_xlabel('Run Time (seconds)')
-        ax[ii, jj].set_title(title_list[data_ind])
-    ax[0, 0].set_ylim([0.85, 1.02])
-    ax[0, 0].set_yticks([0.85, 0.90, 0.95, 1.0])
-    ax[0, 0].set_yticklabels([0.85, 0.90, 0.95, 1.0])
-    ax[0, 1].set_ylim([0.6, 1.02])
-    ax[0, 1].set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[0, 1].set_yticklabels([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[0, 2].set_ylim([0.9, 1.02])
-    ax[0, 2].set_yticks([0.92, 0.94, 0.96, 0.98, 1.0])
-    ax[0, 2].set_yticklabels([0.92, 0.94, 0.96, 0.98, 1.0])
-    ax[1, 0].set_ylim([0.6, 1.02])
-    ax[1, 0].set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[1, 0].set_yticklabels([0.6, 0.7, 0.8, 0.9, 1.0])
-    ax[1, 1].set_ylim([0.6, 0.92])
-    ax[1, 1].set_yticks([0.6, 0.7, 0.8, 0.9])
-    ax[1, 1].set_yticklabels([0.6, 0.7, 0.8, 0.9])
-    ax[1, 2].set_ylim([0.7, 1.02])
-    ax[1, 2].set_yticks([0.7, 0.80, 0.90, 1.0])
-    ax[1, 2].set_yticklabels([0.7, 0.80, 0.90, 1.0])
-    plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[1, 1].legend(loc='lower center', framealpha=1.0, frameon=True, borderpad=0.1,
-                    labelspacing=0.2, handletextpad=0.1, markerfirst=True)
-    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all-iter.pdf'
-    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
-    plt.close()
+            rts = np.mean(np.asarray([results[trial_i][6] for trial_i in range(num_trials)]), axis=0)
+            data_fig8[dataset][(ii, jj)][method] = [rts, aucs]
+    pkl.dump(data_fig8, open(path + '/results/data_fig8.pkl', 'wb'))
+    exit()
 
 
-def show_all_parameter_select():
-    import matplotlib.pyplot as plt
-    from pylab import rcParams
-    plt.rcParams['text.usetex'] = True
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
-    plt.rcParams["font.size"] = 18
-    rcParams['figure.figsize'] = 16, 8.5
-    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
-    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
-                  r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
-    marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
-    color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
-    fig, ax = plt.subplots(2, 3)
-    for i, j in product(range(2), range(3)):
-        ax[i, j].grid(color='lightgray', linewidth=0.5, linestyle='dashed')
+def get_data_fig4():
+    path = '/home/baojian/Dropbox/pub/2020/KDD2020'
     num_trials = 10
-    title_list = ['real-sim', 'farmads', 'rcv1b', 'imdb', 'reviews', 'news20b']
+    data_fig4 = dict()
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
     for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
                                         '10_imdb', '11_reviews', '02_news20b']):
+        data_fig4[dataset] = dict()
         ii, jj = data_ind / 3, data_ind % 3
+        data_fig4[dataset][(ii, jj)] = dict()
         for ind, method in enumerate(list_methods):
             print(method)
             results = pkl.load(open(root_path + '%s/re_%s_%s.pkl' % (dataset, dataset, method)))
@@ -1005,15 +915,216 @@ def show_all_parameter_select():
                         sparse_ratio_mat[trial_i][ind_l1] = cv_res[(trial_i, para_mu, para_l1)][3]
                 xx = np.mean(auc_matrix, axis=0)
                 yy = np.mean(sparse_ratio_mat, axis=0)
+            data_fig4[dataset][(ii, jj)][method] = [xx, yy]
+    pkl.dump(data_fig4, open(path + '/results/data_fig4.pkl', 'wb'))
+
+
+def result_all_converge_curves():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 20
+    rcParams['figure.figsize'] = 12, 7
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
+                  r'SOLAM', r'SPAUC', r'FSAUC']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(2, 3)
+    for i, j in product(range(2), range(3)):
+        ax[i, j].grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
+    data_fig3 = pkl.load(open('/home/baojian/Dropbox/pub/2020/KDD2020/results/data_fig3.pkl'))
+    title_list = ['(a) real-sim', '(b) farm-ads', '(c) rcv1b', '(d) imdb', '(e) reviews', '(f) news20b']
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        ii, jj = data_ind / 3, data_ind % 3
+        for ind, method in enumerate(list_methods):
+            rts, aucs = data_fig3[dataset][(ii, jj)][method]
+            ax[ii, jj].plot(rts, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
+                            markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
+        ax[ii, 0].set_ylabel('AUC')
+        ax[1, jj].set_xlabel('Run time (seconds)')
+        ax[ii, jj].set_title(title_list[data_ind])
+        ax[ii, jj].spines['right'].set_visible(False)
+        ax[ii, jj].spines['top'].set_visible(False)
+
+    ax[0, 0].set_ylim([0.86, 1.02])
+    ax[0, 0].set_yticks([0.90, 0.94, 0.98])
+    ax[0, 0].set_yticklabels(["0.90", 0.94, 0.98])
+    ax[0, 0].set_xticks([5, 10, 15])
+    ax[0, 0].set_xticklabels(["5", "10", "15"])
+
+    ax[0, 1].set_ylim([0.6, 1.02])
+    ax[0, 1].set_yticks([0.7, 0.8, 0.9])
+    ax[0, 1].set_yticklabels([0.7, 0.8, 0.9])
+    ax[0, 1].set_xticks([0.6, 1.2, 1.8])
+    ax[0, 1].set_xticklabels(["0.6", "1.2", "1.8"])
+
+    ax[0, 2].set_ylim([0.94, 1.02])
+    ax[0, 2].set_yticks([0.96, 0.98, 1.0])
+    ax[0, 2].set_yticklabels([0.96, 0.98, 1.0])
+    ax[0, 2].set_xticks([200, 400, 600])
+    ax[0, 2].set_xticklabels(["200", "400", "600"])
+
+    ax[1, 0].set_ylim([0.6, 1.0])
+    ax[1, 0].set_yticks([0.7, 0.8, 0.9])
+    ax[1, 0].set_yticklabels([0.7, 0.8, 0.9])
+    ax[1, 0].set_xticks([15, 30, 45])
+    ax[1, 0].set_xticklabels(["15", "30", "45"])
+
+    ax[1, 1].set_ylim([0.6, 1.0])
+    ax[1, 1].set_yticks([0.7, 0.8, 0.9])
+    ax[1, 1].set_yticklabels([0.7, 0.8, 0.9])
+    ax[1, 1].set_xticks([25, 50, 75])
+    ax[1, 1].set_xticklabels(["25", "50", "75"])
+
+    ax[1, 2].set_ylim([0.80, 1.0])
+    ax[1, 2].set_yticks([0.85, 0.90, 0.95])
+    ax[1, 2].set_yticklabels([0.85, 0.90, 0.95])
+    ax[1, 2].set_xticks([200, 400, 600])
+    ax[1, 2].set_xticklabels(["200", "400", "600"])
+    plt.subplots_adjust(wspace=0.15, hspace=0.3)
+    ax[1, 2].legend(loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
+                    labelspacing=0.2, handletextpad=0.1, fontsize=14, markerfirst=True)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all.pdf'
+    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
+def result_all_converge_curves_iter():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 20
+    rcParams['figure.figsize'] = 12, 7
+    data_fig8 = pkl.load(open('/home/baojian/Dropbox/pub/2020/KDD2020/results/data_fig8.pkl'))
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l2', 'spam_l1l2', 'solam', 'spauc', 'fsauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^2$', r'SPAM-$\displaystyle \ell^1/\ell^2$',
+                  r'SOLAM', r'SPAUC', r'FSAUC']
+    marker_list = ['s', 'D', 'o', 'H', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'gray', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(2, 3)
+    for i, j in product(range(2), range(3)):
+        ax[i, j].grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
+        ax[i, j].spines['right'].set_visible(False)
+        ax[i, j].spines['top'].set_visible(False)
+    title_list = ['(a) real-sim', '(b) farm-ads', '(c) rcv1b', '(d) imdb', '(e) reviews', '(f) news20b']
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        ii, jj = data_ind / 3, data_ind % 3
+        for ind, method in enumerate(list_methods):
+            iters, aucs = data_fig8[dataset][(ii, jj)][method]
+            ax[ii, jj].plot(iters, aucs, marker=marker_list[ind], markersize=5.0, markerfacecolor='w',
+                            markeredgewidth=1., linewidth=1.0, label=label_list[ind], color=color_list[ind])
+        ax[ii, 0].set_ylabel('AUC')
+        ax[1, jj].set_xlabel('Samples Seen')
+        ax[ii, jj].set_title(title_list[data_ind])
+    ax[0, 0].set_ylim([0.86, 1.02])
+    ax[0, 0].set_yticks([0.90, 0.94, 0.98])
+    ax[0, 0].set_yticklabels(["0.90", 0.94, 0.98])
+    ax[0, 0].set_xticks([10000, 24000, 38000])
+    ax[0, 0].set_xticklabels([10000, 24000, 38000])
+
+    ax[0, 1].set_ylim([0.6, 1.02])
+    ax[0, 1].set_yticks([0.7, 0.8, 0.9])
+    ax[0, 1].set_yticklabels([0.7, 0.8, 0.9])
+    ax[0, 1].set_xticks([800, 1600, 2400])
+    ax[0, 1].set_xticklabels([800, 1600, 2400])
+
+    ax[0, 2].set_ylim([0.94, 1.02])
+    ax[0, 2].set_yticks([0.96, 0.98, 1.0])
+    ax[0, 2].set_yticklabels([0.96, 0.98, 1.0])
+    ax[0, 2].set_xticks([100000, 250000, 400000])
+    ax[0, 2].set_xticklabels([100000, 250000, 400000])
+
+    ax[1, 0].set_ylim([0.6, 1.0])
+    ax[1, 0].set_yticks([0.7, 0.8, 0.9])
+    ax[1, 0].set_yticklabels([0.7, 0.8, 0.9])
+    ax[1, 0].set_xticks([8000, 18000, 27000])
+    ax[1, 0].set_xticklabels([8000, 18000, 27000])
+
+    ax[1, 1].set_ylim([0.6, 1.0])
+    ax[1, 1].set_yticks([0.7, 0.8, 0.9])
+    ax[1, 1].set_yticklabels([0.7, 0.8, 0.9])
+    ax[1, 1].set_xticks([1500, 3000, 4500])
+    ax[1, 1].set_xticklabels([1500, 3000, 4500])
+
+    ax[1, 2].set_ylim([0.80, 1.0])
+    ax[1, 2].set_yticks([0.85, 0.90, 0.95])
+    ax[1, 2].set_yticklabels([0.85, 0.90, 0.95])
+    ax[1, 2].set_xticks([4000, 8000, 12000])
+    ax[1, 2].set_xticklabels([4000, 8000, 12000])
+
+    plt.subplots_adjust(wspace=0.2, hspace=0.3)
+    ax[0, 0].legend(loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
+                    labelspacing=0.2, handletextpad=0.1, markerfirst=True, fontsize=14)
+    f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/curves-all-iter.pdf'
+    fig.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
+    plt.close()
+
+
+def show_all_parameter_select():
+    import matplotlib.pyplot as plt
+    from pylab import rcParams
+    plt.rcParams['text.usetex'] = True
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    plt.rcParams['text.latex.preamble'] = '\usepackage{libertine}'
+    plt.rcParams["font.size"] = 20
+    rcParams['figure.figsize'] = 12, 7
+    list_methods = ['ftrl_auc', 'spam_l1', 'spam_l1l2', 'spauc']
+    label_list = [r'FTRL-AUC', r'\textsc{SPAM}-$\displaystyle \ell^1$',
+                  r'SPAM-$\displaystyle \ell^1/\ell^2$', r'SPAUC']
+    marker_list = ['s', 'D', 'o', '>', '>', '<', 'v', '^']
+    color_list = ['r', 'b', 'g', 'm', 'y', 'c', 'm', 'black']
+    fig, ax = plt.subplots(2, 3)
+    data_fig4 = pkl.load(open('/home/baojian/Dropbox/pub/2020/KDD2020/results/data_fig4.pkl'))
+    for i, j in product(range(2), range(3)):
+        ax[i, j].grid(color='gray', linewidth=0.5, linestyle='--', dashes=(10, 10))
+    title_list = ['(a) real-sim', '(b) farm-ads', '(c) rcv1b', '(d) imdb', '(e) reviews', '(f) news20b']
+    for data_ind, dataset in enumerate(['03_real_sim', '08_farmads', '05_rcv1_bin',
+                                        '10_imdb', '11_reviews', '02_news20b']):
+        ii, jj = data_ind / 3, data_ind % 3
+        for ind, method in enumerate(list_methods):
+            xx, yy = data_fig4[dataset][(ii, jj)][method]
             ax[ii, jj].plot(xx, yy, marker=marker_list[ind], markersize=6.0, markerfacecolor='w',
                             markeredgewidth=1.5, linewidth=1.5, label=label_list[ind], color=color_list[ind])
-            ax[ii, 0].set_ylabel('Sparse-Ratio')
+            ax[ii, 0].set_ylabel('Sparse Ratio')
             ax[1, jj].set_xlabel('AUC')
             ax[ii, jj].set_yscale('log')
             ax[ii, jj].set_title(title_list[data_ind])
-    plt.subplots_adjust(wspace=0.15, hspace=0.2)
-    ax[0, 0].legend(fancybox=True, loc='upper left', framealpha=1.0, frameon=True, borderpad=0.1,
-                    labelspacing=0.2, handletextpad=0.1, markerfirst=True)
+            ax[ii, jj].spines['right'].set_visible(False)
+            ax[ii, jj].spines['top'].set_visible(False)
+    for i in range(3):
+        ax[0, i].set_ylim([0.0, 1.1])
+        ax[0, i].set_yticks([0.0001, 0.001, 0.01, 0.1])
+        ax[0, i].set_xlim([0.5, 1.0])
+        ax[0, i].set_xticks([0.6, 0.7, 0.8, 0.9])
+        ax[0, i].tick_params(labelbottom=False)
+    ax[0, 0].set_yticks([0.0001, 0.001, 0.01, 0.1])
+    ax[0, 1].tick_params(labelleft=False)
+    ax[0, 2].tick_params(labelleft=False)
+    ax[1, 0].set_yticks([0.0001, 0.001, 0.01, 0.1])
+    ax[1, 1].tick_params(labelleft=False)
+    ax[1, 2].tick_params(labelleft=False)
+
+    for i, j in product(range(2), range(3)):
+        ax[i, j].set_ylim([0.00001, 1.1])
+        ax[i, j].set_yticks([0.0001, 0.001, 0.01, 0.1])
+        ax[i, j].set_xlim([0.5, 1.0])
+        ax[i, j].set_xticks([0.6, 0.7, 0.8, 0.9])
+
+    plt.subplots_adjust(wspace=0.05, hspace=0.2)
+    ax[1, 0].legend(fancybox=True, loc='lower right', framealpha=1.0, frameon=True, borderpad=0.1,
+                    labelspacing=0.2, handletextpad=0.1, markerfirst=True, fontsize=14)
     f_name = '/home/baojian/Dropbox/Apps/ShareLaTeX/kdd20-oda-auc/figs/para-select-all.pdf'
     plt.savefig(f_name, dpi=600, bbox_inches='tight', pad_inches=0, format='pdf')
     plt.close()
