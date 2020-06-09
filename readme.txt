@@ -2,11 +2,12 @@
 Thank you for taking the time to review our code and datasets. This readme.txt describes 
 how to run FTRL-AUC and all other baseline methods. 
 
-You will find the following 4 sub-folders:
+You will find the following 4 sub-folders and 1 supplement:
     1.  ~/code/: It contains the implementation of FTRL-AUC and all baseline methods.
     2.  ~/datasets/: As shown in our paper, we consider 7 datasets.
     3.  ~/results/: These generated results are presented in our paper.
     4.  ~/figures/: All figures and corresponding data used in our paper.
+    5.  the supplement is here: https://github.com/taejj7t1wv/ftrl-auc
 
 Our code is written by Python2.7 and C (with C11 standard). We assume your Operating 
 System is GNU/Linux-based. However, if you have MacOS or MacBook, it will be okay. The 
