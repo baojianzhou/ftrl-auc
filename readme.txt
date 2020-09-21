@@ -1,5 +1,4 @@
 --------------------------------------------------------------------------
-Thank you for taking the time to review our code and datasets. 
 
 We only showcase the code here. For datasets, results, and figures,
 please check them at: https://www.dropbox.com/sh/0h5oa2y03no6hhk/AACKAbBXw6eFpobzGncS43kXa?dl=0
